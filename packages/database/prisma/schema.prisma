@@ -1,0 +1,33 @@
+generator client {
+    provider = "prisma-client-js"
+    output   = "../generated/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    id         Int          @id @default(autoincrement())
+    username   String       @unique
+    email      String       @unique
+    password   String
+    avatarId   String
+    recentMaps RecentMaps[]
+    userMaps   UserMaps[]
+}
+
+model RecentMaps {
+    id     Int    @id @default(autoincrement())
+    userId Int
+    mapId  String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserMaps {
+    id     Int    @id @default(autoincrement())
+    userId Int
+    mapId  String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
