@@ -16,6 +16,7 @@ type OfficeType = "MAIN" | "EAST" | "NORTH_1" | "NORTH_2" | "WEST";
 export class GameScene extends Phaser.Scene {
     room: Room;
     currentPlayer: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+    currentPlayerUsername: string;
     currentSessionId: string;
     playerEntities: {
         [sessionId: string]: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
@@ -144,7 +145,10 @@ export class GameScene extends Phaser.Scene {
             .then((peer) => {
                 store.dispatch(setShowChat(true));
                 // connect to the office
-                this.room.send(`JOIN_${roomName}_OFFICE`, peer.id);
+                this.room.send(`JOIN_${roomName}_OFFICE`, {
+                    peerId: peer.id,
+                    username: this.currentPlayerUsername,
+                });
             })
             .catch((error) => {
                 console.error("Failed to initialize peer:", error);
@@ -194,7 +198,7 @@ export class GameScene extends Phaser.Scene {
         }
 
         this.room.send(addMessage, {
-            username: "Nennuuuu",
+            username: this.currentPlayerUsername,
             message: content,
         });
     }
@@ -208,39 +212,8 @@ export class GameScene extends Phaser.Scene {
         this.input.keyboard.disableGlobalCapture();
     }
 
-    preload() {
-        this.load.atlas("queen", "assets/queen.png", "assets/queen_atlas.json");
-        this.load.animation("queen_anim", "assets/queen_anim.json");
-        this.load.tilemapTiledJSON("map", "/assets/map/map.json");
-        this.load.spritesheet("chair", "assets/items/chair.png", {
-            frameWidth: 32,
-            frameHeight: 32,
-        });
-        this.load.spritesheet("generic", "assets/tileset/Generic.png", {
-            frameWidth: 32,
-            frameHeight: 32,
-        });
-        this.load.spritesheet("basement", "assets/tileset/Basement.png", {
-            frameWidth: 32,
-            frameHeight: 32,
-        });
-        this.load.spritesheet(
-            "modern_office",
-            "assets/tileset/Modern_Office_Black_Shadow.png",
-            {
-                frameWidth: 32,
-                frameHeight: 32,
-            }
-        );
-        this.load.spritesheet("whiteboard", "assets/items/whiteboard.png", {
-            frameWidth: 32,
-            frameHeight: 32,
-        });
-        this.load.spritesheet("chair", "assets/items/chair.png", {
-            frameWidth: 32,
-            frameHeight: 32,
-        });
-        this.load.image("ground_tiles", "assets/map/FloorAndGround.png");
+    setUsername(username: string) {
+        this.currentPlayerUsername = username;
     }
 
     async create() {
@@ -649,7 +622,7 @@ export class GameScene extends Phaser.Scene {
                     break;
             }
 
-            this.room.send(room);
+            this.room.send(room, this.currentPlayerUsername);
             store.dispatch(clearChat()); // player left the office so clear the redux state as well
             store.dispatch(setShowChat(false));
             peerService.removeAllPeerConnections();

@@ -1,5 +1,6 @@
 import { GameScene as MainGame } from "./scenes/GameScene";
 import { AUTO } from "phaser";
+import { Bootstrap } from "./scenes/Bootstrap";
 
 //  Find out more information about the Game Config at:
 //  https://newdocs.phaser.io/docs/3.70.0/Phaser.Types.Core.GameConfig
@@ -16,7 +17,7 @@ const config: Phaser.Types.Core.GameConfig = {
         },
     },
     pixelArt: true,
-    scene: [MainGame],
+    scene: [Bootstrap, MainGame],
 };
 
 const phaserGame = new Phaser.Game(config);

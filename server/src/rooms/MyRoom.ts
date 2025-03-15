@@ -59,13 +59,14 @@ export class MyRoom extends Room<MyRoomState> {
     private handleOfficeJoin(
         client: Client,
         peerId: string,
+        username: string,
         officeType: OfficeType
     ) {
         const sessionId = client.sessionId;
         const { chat, members, name } = this.getOfficeData(officeType);
 
         const newMessage = new OfficeChat();
-        newMessage.username = "Nennuuuu";
+        newMessage.username = username;
         newMessage.message = `Just joined ${name} lobby`;
         newMessage.type = "PLAYER_JOINED";
 
@@ -86,12 +87,16 @@ export class MyRoom extends Room<MyRoomState> {
         });
     }
 
-    private handleLeftOffice(client: Client, officeType: OfficeType) {
+    private handleLeftOffice(
+        client: Client,
+        username: string,
+        officeType: OfficeType
+    ) {
         const sessionId = client.sessionId;
         const { name, chat, members } = this.getOfficeData(officeType);
 
         const newMessage = new OfficeChat();
-        newMessage.username = "Nennuuuu";
+        newMessage.username = username;
         newMessage.message = `Left ${name} lobby`;
         newMessage.type = "PLAYER_LEFT";
 
@@ -125,12 +130,12 @@ export class MyRoom extends Room<MyRoomState> {
             player.anim = input.anim;
         });
 
-        this.onMessage("JOIN_MAIN_OFFICE", (client, peerId) => {
-            this.handleOfficeJoin(client, peerId, "MAIN");
+        this.onMessage("JOIN_MAIN_OFFICE", (client, { peerId, username }) => {
+            this.handleOfficeJoin(client, peerId, username, "MAIN");
         });
 
-        this.onMessage("LEFT_MAIN_OFFICE", (client) => {
-            this.handleLeftOffice(client, "MAIN");
+        this.onMessage("LEFT_MAIN_OFFICE", (client, username) => {
+            this.handleLeftOffice(client, username, "MAIN");
         });
 
         this.onMessage(
@@ -140,12 +145,12 @@ export class MyRoom extends Room<MyRoomState> {
             }
         );
 
-        this.onMessage("JOIN_EAST_OFFICE", (client, peerId) => {
-            this.handleOfficeJoin(client, peerId, "EAST");
+        this.onMessage("JOIN_EAST_OFFICE", (client, { peerId, username }) => {
+            this.handleOfficeJoin(client, peerId, username, "EAST");
         });
 
-        this.onMessage("LEFT_EAST_OFFICE", (client) => {
-            this.handleLeftOffice(client, "EAST");
+        this.onMessage("LEFT_EAST_OFFICE", (client, username) => {
+            this.handleLeftOffice(client, username, "EAST");
         });
 
         this.onMessage(
@@ -155,12 +160,15 @@ export class MyRoom extends Room<MyRoomState> {
             }
         );
 
-        this.onMessage("JOIN_NORTH_1_OFFICE", (client, peerId) => {
-            this.handleOfficeJoin(client, peerId, "NORTH_1");
-        });
+        this.onMessage(
+            "JOIN_NORTH_1_OFFICE",
+            (client, { peerId, username }) => {
+                this.handleOfficeJoin(client, peerId, username, "NORTH_1");
+            }
+        );
 
-        this.onMessage("LEFT_NORTH_1_OFFICE", (client) => {
-            this.handleLeftOffice(client, "NORTH_1");
+        this.onMessage("LEFT_NORTH_1_OFFICE", (client, username) => {
+            this.handleLeftOffice(client, username, "NORTH_1");
         });
 
         this.onMessage(
@@ -170,12 +178,15 @@ export class MyRoom extends Room<MyRoomState> {
             }
         );
 
-        this.onMessage("JOIN_NORTH_2_OFFICE", (client, peerId) => {
-            this.handleOfficeJoin(client, peerId, "NORTH_2");
-        });
+        this.onMessage(
+            "JOIN_NORTH_2_OFFICE",
+            (client, { peerId, username }) => {
+                this.handleOfficeJoin(client, peerId, username, "NORTH_2");
+            }
+        );
 
-        this.onMessage("LEFT_NORTH_2_OFFICE", (client) => {
-            this.handleLeftOffice(client, "NORTH_2");
+        this.onMessage("LEFT_NORTH_2_OFFICE", (client, username) => {
+            this.handleLeftOffice(client, username, "NORTH_2");
         });
 
         this.onMessage(
@@ -185,12 +196,12 @@ export class MyRoom extends Room<MyRoomState> {
             }
         );
 
-        this.onMessage("JOIN_WEST_OFFICE", (client, peerId) => {
-            this.handleOfficeJoin(client, peerId, "WEST");
+        this.onMessage("JOIN_WEST_OFFICE", (client, { peerId, username }) => {
+            this.handleOfficeJoin(client, peerId, username, "WEST");
         });
 
-        this.onMessage("LEFT_WEST_OFFICE", (client) => {
-            this.handleLeftOffice(client, "WEST");
+        this.onMessage("LEFT_WEST_OFFICE", (client, username) => {
+            this.handleLeftOffice(client, username, "WEST");
         });
 
         this.onMessage(

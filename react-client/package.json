@@ -9,6 +9,7 @@
         "build-nolog": "vite build --config vite/config.prod.mjs"
     },
     "dependencies": {
+        "@radix-ui/react-slot": "^1.1.2",
         "@reduxjs/toolkit": "^2.6.0",
         "@tailwindcss/vite": "^4.0.9",
         "class-variance-authority": "^0.7.1",

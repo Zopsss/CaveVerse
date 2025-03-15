@@ -1,6 +1,7 @@
 import { Action, configureStore, ThunkAction } from "@reduxjs/toolkit";
 import chatReducer from "./features/chat/chatSlice";
 import webrtcReducer from "./features/webRtc/webRtcSlice";
+import roomReducer from "./features/room/roomSlice";
 import { enableMapSet } from "immer";
 
 // Error: [Immer] The plugin for 'MapSet' has not been loaded into Immer.
@@ -11,6 +12,7 @@ const store = configureStore({
     reducer: {
         chat: chatReducer,
         webrtc: webrtcReducer,
+        room: roomReducer,
     },
 
     middleware: (getDefaultMiddleware) =>
