@@ -7,6 +7,8 @@ interface InputMessageType {
     message: string;
 }
 export class MyRoom extends Room<MyRoomState> {
+    room: string;
+    roomPassword: string;
     // for debugging purpose only
     getAllMessages() {
         const allMessages: {
@@ -82,7 +84,7 @@ export class MyRoom extends Room<MyRoomState> {
                 members.has(member.sessionId) &&
                 member.sessionId !== client.sessionId
             ) {
-                member.send("USER_CONNECTED", peerId);
+                member.send("CONNECT_TO_WEBRTC", peerId);
             }
         });
     }
@@ -105,7 +107,7 @@ export class MyRoom extends Room<MyRoomState> {
 
         this.clients.forEach((member) => {
             if (members.has(member.sessionId)) {
-                member.send("USER_DISCONNECTED", client.sessionId);
+                member.send("DISCONNECT_FROM_WEBRTC", client.sessionId);
             }
         });
     }
@@ -120,7 +122,23 @@ export class MyRoom extends Room<MyRoomState> {
         chat.push(newMessage);
     }
 
-    onCreate(options: any) {
+    onAuth(
+        client: Client,
+        options: { roomName: string; password: string | null }
+    ) {
+        console.log("in auth, options: ", options);
+        if (this.roomPassword === options.password) {
+            return true;
+        }
+        return false;
+    }
+
+    onCreate(options: { name: string; password: string | null }) {
+        console.log("options onCreate: ", options);
+        this.room = options.name;
+        this.roomPassword = options.password;
+        this.setMetadata({ name: options.name });
+
         this.setState(new MyRoomState());
 
         this.onMessage(0, (client, input) => {

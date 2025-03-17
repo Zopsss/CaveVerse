@@ -1,7 +1,10 @@
 import { setRoomJoined } from "../../app/features/room/roomSlice";
 import store from "../../app/store";
+import Network from "./Network";
 
 export class Bootstrap extends Phaser.Scene {
+    network: Network;
+
     constructor() {
         super("bootstrap");
     }
@@ -41,8 +44,12 @@ export class Bootstrap extends Phaser.Scene {
         this.load.image("ground_tiles", "assets/map/FloorAndGround.png");
     }
 
+    init() {
+        this.network = new Network();
+    }
+
     launchGame() {
-        this.scene.launch("GameScene");
+        this.scene.launch("GameScene", { network: this.network });
         store.dispatch(setRoomJoined(true));
     }
 }

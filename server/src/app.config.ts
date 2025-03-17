@@ -1,20 +1,20 @@
 import config from "@colyseus/tools";
 import { monitor } from "@colyseus/monitor";
 import { playground } from "@colyseus/playground";
-
+import { LobbyRoom } from "colyseus";
 /**
  * Import your Room files
  */
 import { MyRoom } from "./rooms/MyRoom";
-import { MainOfficeRoom } from "./rooms/MainOfficeRoom";
 
 export default config({
     initializeGameServer: (gameServer) => {
         /**
          * Define your room handlers:
          */
-        gameServer.define("my_room", MyRoom);
-        gameServer.define("main_office_room", MainOfficeRoom);
+        gameServer.define("LOBBY_ROOM", LobbyRoom);
+        gameServer.define("PUBLIC_ROOM", MyRoom);
+        gameServer.define("PRIVATE_ROOM", MyRoom).enableRealtimeListing();
     },
 
     initializeExpress: (app) => {

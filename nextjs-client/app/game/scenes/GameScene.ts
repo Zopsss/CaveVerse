@@ -216,7 +216,7 @@ export class GameScene extends Phaser.Scene {
         this.client = new Client(BACKEND_URL);
 
         try {
-            this.room = await this.client.joinOrCreate("my_room", {});
+            this.room = await this.client.joinOrCreate("PUBLIC_ROOM", {});
         } catch (e) {
             console.error(e);
         }

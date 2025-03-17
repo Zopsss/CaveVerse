@@ -10,8 +10,15 @@ import {
 import store from "../../app/store";
 import Peer from "peerjs";
 import peerService from "../../app/peerService";
+import Network from "./Network";
 
 type OfficeType = "MAIN" | "EAST" | "NORTH_1" | "NORTH_2" | "WEST";
+type officeNames =
+    | "mainOffice"
+    | "eastOffice"
+    | "westOffice"
+    | "northOffice1"
+    | "northOffice2";
 
 export class GameScene extends Phaser.Scene {
     room: Room;
@@ -26,21 +33,11 @@ export class GameScene extends Phaser.Scene {
     mapLayer: Phaser.Tilemaps.TilemapLayer;
     map!: Phaser.Tilemaps.Tilemap;
     client!: Client;
-    officeRoom: Room;
     sessionID: string;
     myPeer: Peer;
-    currentSpace:
-        | "mainOffice"
-        | "eastOffice"
-        | "westOffice"
-        | "northOffice1"
-        | "northOffice2";
-    prevSpace:
-        | "mainOffice"
-        | "eastOffice"
-        | "westOffice"
-        | "northOffice1"
-        | "northOffice2";
+    network: Network;
+    currentSpace: officeNames;
+    prevSpace: officeNames;
 
     constructor() {
         super({ key: "GameScene" });
@@ -141,11 +138,11 @@ export class GameScene extends Phaser.Scene {
 
         // initialize the peer
         peerService
-            .initializePeer(this.room.sessionId)
+            .initializePeer(this.network.room.sessionId)
             .then((peer) => {
                 store.dispatch(setShowChat(true));
                 // connect to the office
-                this.room.send(`JOIN_${roomName}_OFFICE`, {
+                this.network.room.send(`JOIN_${roomName}_OFFICE`, {
                     peerId: peer.id,
                     username: this.currentPlayerUsername,
                 });
@@ -156,11 +153,73 @@ export class GameScene extends Phaser.Scene {
             });
     }
 
+    // Helper method to get the appropriate state properties for each office
+    private getOfficeData(officeNames: officeNames) {
+        const officeMap = {
+            mainOffice: {
+                members: this.network.room.state.mainOfficeMembers,
+                chat: this.network.room.state.mainOfficeChat,
+            },
+            eastOffice: {
+                members: this.network.room.state.eastOfficeMembers,
+                chat: this.network.room.state.eastOfficeChat,
+            },
+            westOffice: {
+                members: this.network.room.state.westOfficeMembers,
+                chat: this.network.room.state.westOfficeChat,
+            },
+            northOffice1: {
+                members: this.network.room.state.northOffice1Members,
+                chat: this.network.room.state.northOffice1Chat,
+            },
+            northOffice2: {
+                members: this.network.room.state.northOffice2Members,
+                chat: this.network.room.state.northOffice2Chat,
+            },
+        };
+
+        return officeMap[officeNames];
+    }
+
+    private handleChatMessages(prevSpace: officeNames, serverData) {
+        const { chat, members } = this.getOfficeData(prevSpace);
+
+        const isInOffice: boolean = members.has(this.network.room.sessionId);
+
+        // if current player is not in the space then don't do anything.
+        if (!isInOffice) return;
+
+        if (this.prevSpace === prevSpace) {
+            // this means the player is already in lobby
+            // so push whatever message comes from server.
+            store.dispatch(
+                pushNewMessage({
+                    username: serverData.username,
+                    message: serverData.message,
+                    type: serverData.type,
+                })
+            );
+        } else {
+            // this means that the player just joined main office chat,
+            // so we will get the whole chat and push it to the redux store.
+            console.log("player just joined the lobby");
+            const allMessages = chat.map((msg) => {
+                return {
+                    username: msg.username,
+                    message: msg.message,
+                    type: msg.type,
+                };
+            });
+            store.dispatch(addChat(allMessages));
+            this.prevSpace = prevSpace;
+        }
+    }
+
     async connect() {
         this.client = new Client(BACKEND_URL);
 
         try {
-            this.room = await this.client.joinOrCreate("my_room", {});
+            this.room = await this.client.joinOrCreate("PUBLIC_ROOM", {});
         } catch (e) {
             console.error(e);
         }
@@ -197,7 +256,7 @@ export class GameScene extends Phaser.Scene {
                 break;
         }
 
-        this.room.send(addMessage, {
+        this.network.room.send(addMessage, {
             username: this.currentPlayerUsername,
             message: content,
         });
@@ -216,7 +275,13 @@ export class GameScene extends Phaser.Scene {
         this.currentPlayerUsername = username;
     }
 
-    async create() {
+    async create(data: { network: Network }) {
+        if (data.network) {
+            this.network = data.network;
+        } else {
+            console.log("network instance missing");
+            throw new Error("server instance missing");
+        }
         // Create tilemap
         this.input.keyboard.disableGlobalCapture();
         this.map = this.make.tilemap({ key: "map" });
@@ -234,10 +299,7 @@ export class GameScene extends Phaser.Scene {
 
         this.cursorKeys = this.input.keyboard.createCursorKeys();
 
-        // Connect with the room
-        await this.connect();
-
-        this.room.state.players.onAdd((player, sessionId) => {
+        this.network.room.state.players.onAdd((player, sessionId) => {
             console.log("player added: ", sessionId);
             const entity = this.physics.add.sprite(
                 player.x,
@@ -252,7 +314,7 @@ export class GameScene extends Phaser.Scene {
             this.playerEntities[sessionId] = entity;
 
             // Is current player
-            if (sessionId === this.room.sessionId) {
+            if (sessionId === this.network.room.sessionId) {
                 this.currentPlayer = entity;
                 this.currentSessionId = sessionId;
                 this.physics.add.collider(this.currentPlayer, this.mapLayer);
@@ -269,7 +331,7 @@ export class GameScene extends Phaser.Scene {
             }
         });
 
-        this.room.state.players.onRemove((player, sessionId) => {
+        this.network.room.state.players.onRemove((player, sessionId) => {
             const entity = this.playerEntities[sessionId];
             if (entity) {
                 entity.destroy();
@@ -277,12 +339,34 @@ export class GameScene extends Phaser.Scene {
             }
         });
 
+        this.network.room.state.mainOfficeChat.onAdd((serverData) => {
+            this.handleChatMessages("mainOffice", serverData);
+        });
+
+        this.network.room.state.eastOfficeChat.onAdd((serverData) => {
+            this.handleChatMessages("eastOffice", serverData);
+        });
+
+        this.network.room.state.westOfficeChat.onAdd((serverData) => {
+            this.handleChatMessages("eastOffice", serverData);
+        });
+
+        this.network.room.state.northOffice1Chat.onAdd((serverData) => {
+            this.handleChatMessages("eastOffice", serverData);
+        });
+
+        this.network.room.state.northOffice2Chat.onAdd((serverData) => {
+            this.handleChatMessages("eastOffice", serverData);
+        });
+
         // TODO: Fix "Cannot call peer - No local stream available"
-        this.room.onMessage("USER_CONNECTED", async (userId) => {
+        this.network.room.onMessage("CONNECT_TO_WEBRTC", async (userId) => {
             try {
                 setTimeout(async () => {
                     // Ensure PeerJS is initialized
-                    await peerService.initializePeer(this.room.sessionId);
+                    await peerService.initializePeer(
+                        this.network.room.sessionId
+                    );
 
                     // Call the new user
                     await peerService.connectToNewUser(userId);
@@ -292,177 +376,8 @@ export class GameScene extends Phaser.Scene {
             }
         });
 
-        this.room.onMessage("USER_DISCONNECTED", (userId) => {
+        this.network.room.onMessage("DISCONNECT_FROM_WEBRTC", (userId) => {
             peerService.disconnectUser(userId);
-        });
-
-        this.room.state.mainOfficeChat.onAdd((item) => {
-            const isInMainOfficeChat: boolean =
-                this.room.state.mainOfficeMembers.has(this.room.sessionId);
-
-            if (!isInMainOfficeChat) return; // if current player is not in this space then don't do anything.
-
-            if (this.prevSpace === "mainOffice") {
-                // this means the player is already in main office chat
-                // so push whatever message comes to redux store.
-                store.dispatch(
-                    pushNewMessage({
-                        username: item.username,
-                        message: item.message,
-                        type: item.type,
-                    })
-                );
-            } else {
-                // this means that the player just joined main office chat,
-                // so we will get the whole chat and push it to the redux store.
-                const allMessages = this.room.state.mainOfficeChat.map(
-                    (msg) => {
-                        return {
-                            username: msg.username,
-                            message: msg.message,
-                            type: msg.type,
-                        };
-                    }
-                );
-                store.dispatch(addChat(allMessages));
-                this.prevSpace = "mainOffice";
-            }
-        });
-
-        this.room.state.eastOfficeChat.onAdd((item) => {
-            const isInEastOfficeChat: boolean =
-                this.room.state.eastOfficeMembers.has(this.room.sessionId);
-
-            if (!isInEastOfficeChat) return; // if current player is not in this space then don't do anything.
-
-            if (this.prevSpace === "eastOffice") {
-                // this means the player is already in main office chat
-                // so push whatever message comes to redux store.
-                store.dispatch(
-                    pushNewMessage({
-                        username: item.username,
-                        message: item.message,
-                        type: item.type,
-                    })
-                );
-            } else {
-                // this means that the player just joined main office chat,
-                // so we will get the whole chat and push it to the redux store.
-                console.log("player just joined the chat");
-                const allMessages = this.room.state.eastOfficeChat.map(
-                    (msg) => {
-                        return {
-                            username: msg.username,
-                            message: msg.message,
-                            type: msg.type,
-                        };
-                    }
-                );
-                store.dispatch(addChat(allMessages));
-                this.prevSpace = "eastOffice";
-            }
-        });
-
-        this.room.state.westOfficeChat.onAdd((item) => {
-            const isInWestOfficeChat: boolean =
-                this.room.state.westOfficeMembers.has(this.room.sessionId);
-
-            if (!isInWestOfficeChat) return; // if current player is not in this space then don't do anything.
-
-            if (this.prevSpace === "westOffice") {
-                // this means the player is already in main office chat
-                // so push whatever message comes to redux store.
-                store.dispatch(
-                    pushNewMessage({
-                        username: item.username,
-                        message: item.message,
-                        type: item.type,
-                    })
-                );
-            } else {
-                // this means that the player just joined main office chat,
-                // so we will get the whole chat and push it to the redux store.
-                console.log("player just joined the chat");
-                const allMessages = this.room.state.westOfficeChat.map(
-                    (msg) => {
-                        return {
-                            username: msg.username,
-                            message: msg.message,
-                            type: msg.type,
-                        };
-                    }
-                );
-                store.dispatch(addChat(allMessages));
-                this.prevSpace = "westOffice";
-            }
-        });
-
-        this.room.state.northOffice1Chat.onAdd((item) => {
-            const isInNorthOffice1Chat: boolean =
-                this.room.state.northOffice1Members.has(this.room.sessionId);
-
-            if (!isInNorthOffice1Chat) return; // if current player is not in this space then don't do anything.
-
-            if (this.prevSpace === "northOffice1") {
-                // this means the player is already in main office chat
-                // so push whatever message comes to redux store.
-                store.dispatch(
-                    pushNewMessage({
-                        username: item.username,
-                        message: item.message,
-                        type: item.type,
-                    })
-                );
-            } else {
-                // this means that the player just joined main office chat,
-                // so we will get the whole chat and push it to the redux store.
-                console.log("player just joined the chat");
-                const allMessages = this.room.state.northOffice1Chat.map(
-                    (msg) => {
-                        return {
-                            username: msg.username,
-                            message: msg.message,
-                            type: msg.type,
-                        };
-                    }
-                );
-                store.dispatch(addChat(allMessages));
-                this.prevSpace = "northOffice1";
-            }
-        });
-
-        this.room.state.northOffice2Chat.onAdd((item) => {
-            const isInNorthOffice2Chat: boolean =
-                this.room.state.northOffice2Members.has(this.room.sessionId);
-
-            if (!isInNorthOffice2Chat) return; // if current player is not in this space then don't do anything.
-
-            if (this.prevSpace === "northOffice2") {
-                // this means the player is already in main office chat
-                // so push whatever message comes to redux store.
-                store.dispatch(
-                    pushNewMessage({
-                        username: item.username,
-                        message: item.message,
-                        type: item.type,
-                    })
-                );
-            } else {
-                // this means that the player just joined main office chat,
-                // so we will get the whole chat and push it to the redux store.
-                console.log("player just joined the chat");
-                const allMessages = this.room.state.northOffice2Chat.map(
-                    (msg) => {
-                        return {
-                            username: msg.username,
-                            message: msg.message,
-                            type: msg.type,
-                        };
-                    }
-                );
-                store.dispatch(addChat(allMessages));
-                this.prevSpace = "northOffice2";
-            }
         });
     }
 
@@ -490,14 +405,14 @@ export class GameScene extends Phaser.Scene {
         const currVelocity = this.currentPlayer.body.velocity;
         if (Math.abs(currVelocity.x) > 0.1 || Math.abs(currVelocity.y) > 0.1) {
             this.currentPlayer.anims.play("queen_walk", true);
-            this.room.send(0, {
+            this.network.room.send(0, {
                 playerX: this.currentPlayer.x,
                 playerY: this.currentPlayer.y,
                 anim: "queen_walk",
             });
         } else {
             this.currentPlayer.anims.play("queen_idle", true);
-            this.room.send(0, {
+            this.network.room.send(0, {
                 playerX: this.currentPlayer.x,
                 playerY: this.currentPlayer.y,
                 anim: "queen_idle",
@@ -506,14 +421,15 @@ export class GameScene extends Phaser.Scene {
 
         // interpolate other players.
         for (let sessionId in this.playerEntities) {
-            if (sessionId === this.room.sessionId) continue;
+            if (sessionId === this.network.room.sessionId) continue;
 
             const entity = this.playerEntities[sessionId];
-            const { serverX, serverY, anim } = entity.data.values;
-
-            entity.x = Phaser.Math.Linear(entity.x, serverX, 0.2);
-            entity.y = Phaser.Math.Linear(entity.y, serverY, 0.2);
-            entity.anims.play(anim, true);
+            if (entity.data) {
+                const { serverX, serverY, anim } = entity.data.values;
+                entity.x = Phaser.Math.Linear(entity.x, serverX, 0.2);
+                entity.y = Phaser.Math.Linear(entity.y, serverY, 0.2);
+                entity.anims.play(anim, true);
+            }
         }
 
         const mainOfficeX = 799.85;
@@ -622,7 +538,7 @@ export class GameScene extends Phaser.Scene {
                     break;
             }
 
-            this.room.send(room, this.currentPlayerUsername);
+            this.network.room.send(room, this.currentPlayerUsername);
             store.dispatch(clearChat()); // player left the office so clear the redux state as well
             store.dispatch(setShowChat(false));
             peerService.removeAllPeerConnections();
