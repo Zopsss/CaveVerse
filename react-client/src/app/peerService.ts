@@ -87,11 +87,6 @@ class PeerService {
             throw new Error("Peer not initialized");
         }
 
-        if (this.myStream) {
-            console.error("Cannot call peer - No local stream available");
-            // throw new Error("No local stream available");
-        }
-
         console.log("Calling peer:", userId, "with my ID:", this.peer.id);
 
         try {
@@ -103,7 +98,6 @@ class PeerService {
 
             // Track that we're calling this peer
             this.activeCallIds.add(userId);
-            this;
 
             // Handle the stream when we get it
             call.on("stream", (remoteStream) => {
@@ -138,9 +132,13 @@ class PeerService {
 
     // disconnect all the connected peers with current player when he leaves the office.
     public removeAllPeerConnections() {
-        this.myStream.getTracks()[0].enabled = false;
-        this.myStream.getTracks()[1].enabled = false;
-        this.myVideo.remove();
+        // if condition is required otherwise an infinite loops starts
+        // if user leaves the office without giving access to his webcam.
+        if (this.myStream) {
+            this.myStream.getTracks()[0].enabled = false;
+            this.myStream.getTracks()[1].enabled = false;
+            this.myVideo.remove();
+        }
 
         this.connectedPeers.forEach((peer) => {
             peer.call.close();
