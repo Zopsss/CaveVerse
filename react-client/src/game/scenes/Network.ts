@@ -10,6 +10,7 @@ export default class Network {
     client: Client;
     room!: Room;
     lobby!: Room;
+    username: string;
 
     constructor() {
         this.client = new Client(BACKEND_URL);
@@ -21,8 +22,11 @@ export default class Network {
         this.lobby = await this.client.joinOrCreate("LOBBY_ROOM");
 
         this.lobby.onMessage("rooms", (rooms) => {
-            console.log("all rooms: ", rooms);
             rooms.forEach((room) => {
+                // public room is also included so we need to ignore it
+                if (room.name === "PUBLIC_ROOM") {
+                    return;
+                }
                 store.dispatch(
                     addAvailableRooms({
                         roomId: room.roomId,
@@ -33,8 +37,10 @@ export default class Network {
         });
 
         this.lobby.onMessage("+", ([roomId, room]) => {
-            console.log("new room: ", roomId, room);
-            console.log("metadata: ", room.metadata);
+            // public room is also included so we need to ignore it
+            if (room.name === "PUBLIC_ROOM") {
+                return;
+            }
             // Avoid duplicate room entries
             const existingRooms = store.getState().room.availableRooms;
             if (!existingRooms.some((r) => r.roomId === roomId)) {
@@ -50,22 +56,39 @@ export default class Network {
         });
     }
 
-    async joinOrCreatePublicRoom() {
-        this.room = await this.client.joinOrCreate("PUBLIC_ROOM", {});
-        this.lobby.leave();
-    }
-
-    async createPrivateRoom(name: string, password: string | null) {
-        this.room = await this.client.create("PRIVATE_ROOM", {
-            name,
-            password,
+    async joinOrCreatePublicRoom(username: string) {
+        this.username = username;
+        this.room = await this.client.joinOrCreate("PUBLIC_ROOM", {
+            username: this.username,
         });
         this.lobby.leave();
     }
 
-    async joinPrivateRoom(roomId: string, password: string | null) {
+    async createPrivateRoom(
+        username: string,
+        name: string,
+        password: string | null
+    ) {
+        this.username = username;
+        this.room = await this.client.create("PRIVATE_ROOM", {
+            name,
+            password,
+            username: this.username,
+        });
+        this.lobby.leave();
+    }
+
+    async joinPrivateRoom(
+        username: string,
+        roomId: string,
+        password: string | null
+    ) {
+        this.username = username;
         console.log("room Id: ", roomId);
-        this.room = await this.client.joinById(roomId, { password });
+        this.room = await this.client.joinById(roomId, {
+            password,
+            username: this.username,
+        });
         this.lobby.leave();
     }
 }

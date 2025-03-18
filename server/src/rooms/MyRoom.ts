@@ -9,6 +9,7 @@ interface InputMessageType {
 export class MyRoom extends Room<MyRoomState> {
     room: string;
     roomPassword: string;
+
     // for debugging purpose only
     getAllMessages() {
         const allMessages: {
@@ -126,7 +127,6 @@ export class MyRoom extends Room<MyRoomState> {
         client: Client,
         options: { roomName: string; password: string | null }
     ) {
-        console.log("in auth, options: ", options);
         if (this.roomPassword === options.password) {
             return true;
         }
@@ -134,7 +134,6 @@ export class MyRoom extends Room<MyRoomState> {
     }
 
     onCreate(options: { name: string; password: string | null }) {
-        console.log("options onCreate: ", options);
         this.room = options.name;
         this.roomPassword = options.password;
         this.setMetadata({ name: options.name });
@@ -228,6 +227,19 @@ export class MyRoom extends Room<MyRoomState> {
                 this.handleAddMessage("WEST", input);
             }
         );
+
+        this.onMessage(
+            "ADD_NEW_GLOBAL_CHAT_MESSAGE",
+            (client, input: InputMessageType) => {
+                const newMessage = new OfficeChat();
+                newMessage.username = input.username;
+                newMessage.message = input.message;
+                newMessage.type = "REGULAR_MESSAGE";
+
+                this.state.globalChat.push(newMessage);
+                this.broadcast("NEW_GLOBAL_CHAT_MESSAGE", newMessage);
+            }
+        );
     }
 
     onJoin(client: Client, options: any) {
@@ -237,14 +249,38 @@ export class MyRoom extends Room<MyRoomState> {
 
         player.x = 550;
         player.y = 820;
+        player.username = options.username;
         player.anim = "queen_idle";
 
         this.state.players.set(client.sessionId, player);
+
+        const newMessage = new OfficeChat();
+        newMessage.type = "PLAYER_JOINED";
+        newMessage.message = `Just joined!`;
+        newMessage.username = options.username;
+        this.state.globalChat.push(newMessage);
+
+        // notifying all users expect the newly joined user that a new user has joined
+        this.broadcast("NEW_GLOBAL_CHAT_MESSAGE", newMessage, {
+            except: [client],
+        });
+
+        // sending whole chat to the newly joined user
+        client.send("GET_WHOLE_GLOBAL_CHAT", this.state.globalChat);
     }
 
     onLeave(client: Client, consented: boolean) {
         console.log(client.sessionId, "left!");
+
+        const newMessage = new OfficeChat();
+        const username = this.state.players.get(client.sessionId).username;
+        newMessage.type = "PLAYER_LEFT";
+        newMessage.username = username;
+        newMessage.message = `Left!`;
+
         this.state.players.delete(client.sessionId);
+        this.state.globalChat.push(newMessage);
+        this.broadcast("NEW_GLOBAL_CHAT_MESSAGE", newMessage);
     }
 
     onDispose() {

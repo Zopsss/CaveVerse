@@ -22,8 +22,7 @@ const RoomSelection = () => {
     const handlePublicRoomJoin = (e) => {
         e.preventDefault();
 
-        bootstrap.network.joinOrCreatePublicRoom().then(() => {
-            game.setUsername(username2);
+        bootstrap.network.joinOrCreatePublicRoom(username2).then(() => {
             bootstrap.launchGame();
         });
     };
@@ -31,19 +30,21 @@ const RoomSelection = () => {
     const handlePrivateRoomCreate = (e) => {
         e.preventDefault();
 
-        bootstrap.network.createPrivateRoom(roomName, roomPassword).then(() => {
-            game.setUsername(username3);
-            bootstrap.launchGame();
-        });
+        bootstrap.network
+            .createPrivateRoom(username3, roomName, roomPassword)
+            .then(() => {
+                bootstrap.launchGame();
+            });
     };
 
     const handlePrivateRoomJoin = (e) => {
         e.preventDefault();
 
-        bootstrap.network.joinPrivateRoom(roomId, roomPassword2).then(() => {
-            game.setUsername(username4);
-            bootstrap.launchGame();
-        });
+        bootstrap.network
+            .joinPrivateRoom(username4, roomId, roomPassword2)
+            .then(() => {
+                bootstrap.launchGame();
+            });
     };
 
     return (

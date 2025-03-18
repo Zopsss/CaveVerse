@@ -9,50 +9,54 @@ interface ChatMessageType {
 const chatSlice = createSlice({
     name: "chat",
     initialState: {
-        chatMessage: new Array<ChatMessageType>(),
+        officeChatMessages: new Array<ChatMessageType>(),
+        globalChatMessages: new Array<ChatMessageType>(),
         focused: false,
-        showChat: false,
+        showOfficeChat: false,
     },
     reducers: {
-        pushNewMessage: (state, action: PayloadAction<ChatMessageType>) => {
-            state.chatMessage.push(action.payload);
+        /* For office specific chat messages */
+        pushNewOfficeMessage: (
+            state,
+            action: PayloadAction<ChatMessageType>
+        ) => {
+            state.officeChatMessages.push(action.payload);
         },
-        playerJoinedMessage: (state, action: PayloadAction<string>) => {
-            state.chatMessage.push({
-                username: action.payload,
-                message: "Joined main office room chat",
-                type: "PLAYER_JOINED",
-            });
-        },
-        playerLeftMessage: (state, action: PayloadAction<string>) => {
-            state.chatMessage.push({
-                username: action.payload,
-                message: "Left main office room chat",
-                type: "PLAYER_LEFT",
-            });
-        },
-        clearChat: (state) => {
-            state.chatMessage = [];
-            console.log("chat cleared: ", state.chatMessage);
-        },
-        addChat: (state, action: PayloadAction<ChatMessageType[]>) => {
+        addOfficeChat: (state, action: PayloadAction<ChatMessageType[]>) => {
             console.log("action: ", action.payload);
-            state.chatMessage = [...action.payload];
-            console.log("new chatMessage: ", state.chatMessage);
+            state.officeChatMessages = [...action.payload];
+            console.log("new chatMessage: ", state.officeChatMessages);
         },
-        setShowChat: (state, action: PayloadAction<boolean>) => {
-            state.showChat = action.payload;
+        clearOfficeChat: (state) => {
+            state.officeChatMessages = [];
+            console.log("chat cleared: ", state.officeChatMessages);
+        },
+        setShowOfficeChat: (state, action: PayloadAction<boolean>) => {
+            state.showOfficeChat = action.payload;
+        },
+
+        /* For global chat messages */
+        pushNewGlobalMessage: (
+            state,
+            action: PayloadAction<ChatMessageType>
+        ) => {
+            state.globalChatMessages.push(action.payload);
+        },
+        addGlobalChat: (state, action: PayloadAction<ChatMessageType[]>) => {
+            console.log("action: ", action.payload);
+            state.globalChatMessages = [...action.payload];
+            console.log("new chatMessage: ", state.globalChatMessages);
         },
     },
 });
 
 export const {
-    pushNewMessage,
-    playerJoinedMessage,
-    playerLeftMessage,
-    clearChat,
-    addChat,
-    setShowChat,
+    pushNewOfficeMessage,
+    clearOfficeChat,
+    addOfficeChat,
+    setShowOfficeChat,
+    pushNewGlobalMessage,
+    addGlobalChat,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

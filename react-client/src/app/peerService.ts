@@ -48,7 +48,6 @@ class PeerService {
             this.myVideo.muted = true; // muting own video
 
             peer.on("open", (id) => {
-                // console.log("Peer initialized with ID:", id);
                 this.peer = peer;
 
                 resolve(peer);
@@ -59,7 +58,6 @@ class PeerService {
                     call.answer(this.myStream);
                     const video = document.createElement("video");
                     this.connectedPeers.set(call.peer, { call, video });
-                    console.log("inside peer.on('call')");
                     call.on("stream", (userStream) => {
                         this.addVideoStream(video, userStream);
                     });

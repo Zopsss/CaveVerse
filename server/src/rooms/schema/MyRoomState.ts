@@ -11,6 +11,7 @@ type MessageType = "PLAYER_JOINED" | "PLAYER_LEFT" | "REGULAR_MESSAGE";
 export class Player extends Schema {
     @type("number") x: number;
     @type("number") y: number;
+    @type("string") username: string;
     @type("string") anim: "queen_idle" | "queen_walk";
 }
 
@@ -22,6 +23,8 @@ export class OfficeChat extends Schema {
 
 export class MyRoomState extends Schema {
     @type({ map: Player }) players = new MapSchema<Player>();
+
+    @type([OfficeChat]) globalChat = new ArraySchema<OfficeChat>(); // storing global chat messages
 
     @type({ set: "string" }) mainOfficeMembers = new SetSchema<string>(); // storing sessionId's of user present in main office
     @type([OfficeChat]) mainOfficeChat = new ArraySchema<OfficeChat>(); // storing main office's chat messages

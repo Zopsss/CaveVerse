@@ -2,10 +2,12 @@ import Phaser from "phaser";
 import { Room, Client } from "colyseus.js";
 import { BACKEND_URL } from "../backend";
 import {
-    addChat,
-    clearChat,
-    pushNewMessage,
-    setShowChat,
+    addOfficeChat,
+    addGlobalChat,
+    clearOfficeChat,
+    pushNewGlobalMessage,
+    pushNewOfficeMessage,
+    setShowOfficeChat,
 } from "../../app/features/chat/chatSlice";
 import store from "../../app/store";
 import Peer from "peerjs";
@@ -140,16 +142,16 @@ export class GameScene extends Phaser.Scene {
         peerService
             .initializePeer(this.network.room.sessionId)
             .then((peer) => {
-                store.dispatch(setShowChat(true));
+                store.dispatch(setShowOfficeChat(true));
                 // connect to the office
                 this.network.room.send(`JOIN_${roomName}_OFFICE`, {
                     peerId: peer.id,
-                    username: this.currentPlayerUsername,
+                    username: this.network.username,
                 });
             })
             .catch((error) => {
                 console.error("Failed to initialize peer:", error);
-                store.dispatch(setShowChat(true));
+                store.dispatch(setShowOfficeChat(true));
             });
     }
 
@@ -181,6 +183,7 @@ export class GameScene extends Phaser.Scene {
         return officeMap[officeNames];
     }
 
+    // handling office specific chat messages
     private handleChatMessages(prevSpace: officeNames, serverData) {
         const { chat, members } = this.getOfficeData(prevSpace);
 
@@ -193,7 +196,7 @@ export class GameScene extends Phaser.Scene {
             // this means the player is already in lobby
             // so push whatever message comes from server.
             store.dispatch(
-                pushNewMessage({
+                pushNewOfficeMessage({
                     username: serverData.username,
                     message: serverData.message,
                     type: serverData.type,
@@ -202,7 +205,6 @@ export class GameScene extends Phaser.Scene {
         } else {
             // this means that the player just joined main office chat,
             // so we will get the whole chat and push it to the redux store.
-            console.log("player just joined the lobby");
             const allMessages = chat.map((msg) => {
                 return {
                     username: msg.username,
@@ -210,7 +212,7 @@ export class GameScene extends Phaser.Scene {
                     type: msg.type,
                 };
             });
-            store.dispatch(addChat(allMessages));
+            store.dispatch(addOfficeChat(allMessages));
             this.prevSpace = prevSpace;
         }
     }
@@ -227,7 +229,6 @@ export class GameScene extends Phaser.Scene {
 
     addNewMessage(content: string) {
         let addMessage: string;
-        console.log(this.currentSpace);
 
         // setting add message according to currently joined space
         switch (this.currentSpace) {
@@ -257,7 +258,14 @@ export class GameScene extends Phaser.Scene {
         }
 
         this.network.room.send(addMessage, {
-            username: this.currentPlayerUsername,
+            username: this.network.username,
+            message: content,
+        });
+    }
+
+    addNewGlobalChatMessage(content: string) {
+        this.network.room.send("ADD_NEW_GLOBAL_CHAT_MESSAGE", {
+            username: this.network.username,
             message: content,
         });
     }
@@ -272,7 +280,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     setUsername(username: string) {
-        this.currentPlayerUsername = username;
+        this.network.username = username;
     }
 
     async create(data: { network: Network }) {
@@ -348,15 +356,15 @@ export class GameScene extends Phaser.Scene {
         });
 
         this.network.room.state.westOfficeChat.onAdd((serverData) => {
-            this.handleChatMessages("eastOffice", serverData);
+            this.handleChatMessages("westOffice", serverData);
         });
 
         this.network.room.state.northOffice1Chat.onAdd((serverData) => {
-            this.handleChatMessages("eastOffice", serverData);
+            this.handleChatMessages("northOffice1", serverData);
         });
 
         this.network.room.state.northOffice2Chat.onAdd((serverData) => {
-            this.handleChatMessages("eastOffice", serverData);
+            this.handleChatMessages("northOffice2", serverData);
         });
 
         // TODO: Fix "Cannot call peer - No local stream available"
@@ -379,6 +387,31 @@ export class GameScene extends Phaser.Scene {
         this.network.room.onMessage("DISCONNECT_FROM_WEBRTC", (userId) => {
             peerService.disconnectUser(userId);
         });
+
+        this.network.room.onMessage("NEW_GLOBAL_CHAT_MESSAGE", (serverData) => {
+            store.dispatch(
+                pushNewGlobalMessage({
+                    username: serverData.username,
+                    message: serverData.message,
+                    type: serverData.type,
+                })
+            );
+        });
+
+        this.network.room.onMessage(
+            "GET_WHOLE_GLOBAL_CHAT",
+            (globalChatMessages) => {
+                const allMessages = globalChatMessages.map((msg) => {
+                    return {
+                        username: msg.username,
+                        message: msg.message,
+                        type: msg.type,
+                    };
+                });
+
+                store.dispatch(addGlobalChat(allMessages));
+            }
+        );
     }
 
     async update(time: number, delta: number) {
@@ -518,7 +551,7 @@ export class GameScene extends Phaser.Scene {
             !isInsideNorthOffice2 &&
             this.prevSpace
         ) {
-            store.dispatch(setShowChat(false));
+            store.dispatch(setShowOfficeChat(false));
             let room: string;
             switch (this.currentSpace) {
                 case "mainOffice":
@@ -538,9 +571,9 @@ export class GameScene extends Phaser.Scene {
                     break;
             }
 
-            this.network.room.send(room, this.currentPlayerUsername);
-            store.dispatch(clearChat()); // player left the office so clear the redux state as well
-            store.dispatch(setShowChat(false));
+            this.network.room.send(room, this.network.username);
+            store.dispatch(clearOfficeChat()); // player left the office so clear the redux state as well
+            store.dispatch(setShowOfficeChat(false));
             peerService.removeAllPeerConnections();
             this.currentSpace = null;
             this.prevSpace = null;
