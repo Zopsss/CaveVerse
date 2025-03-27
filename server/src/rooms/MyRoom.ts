@@ -74,7 +74,7 @@ export class MyRoom extends Room<MyRoomState> {
         newMessage.type = "PLAYER_JOINED";
 
         // Add user to the appropriate office members collection
-        members.add(sessionId);
+        members.set(sessionId, username);
 
         // Add message to the appropriate chat collection
         chat.push(newMessage);
@@ -85,9 +85,17 @@ export class MyRoom extends Room<MyRoomState> {
                 members.has(member.sessionId) &&
                 member.sessionId !== client.sessionId
             ) {
-                member.send("CONNECT_TO_WEBRTC", peerId);
+                member.send("CONNECT_TO_WEBRTC", { peerId, username });
             }
         });
+
+        console.log("peerId: ", peerId);
+
+        const allMembers: any = [];
+        members.forEach((value, key) => {
+            allMembers.push({ key, value });
+        });
+        console.log("chat members: ", allMembers);
     }
 
     private handleLeftOffice(
@@ -238,6 +246,19 @@ export class MyRoom extends Room<MyRoomState> {
 
                 this.state.globalChat.push(newMessage);
                 this.broadcast("NEW_GLOBAL_CHAT_MESSAGE", newMessage);
+            }
+        );
+
+        this.onMessage(
+            "USER_STOPPED_SCREEN_SHARING",
+            (client, office: OfficeType) => {
+                const { members } = this.getOfficeData(office);
+                members.forEach((username, userId) => {
+                    if (userId === client.sessionId) return;
+                    this.clients
+                        .getById(userId)
+                        .send("USER_STOPPED_SCREEN_SHARING", client.sessionId);
+                });
             }
         );
     }

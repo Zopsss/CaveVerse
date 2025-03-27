@@ -6,28 +6,6 @@ import { GameScene } from "../game/scenes/GameScene";
 import phaserGame from "../game/main";
 import { Button } from "./ui/button";
 
-// const VideoPlayer: React.FC<{ stream: MediaProvider }> = ({ stream }) => {
-//     const videoRef = useRef<HTMLVideoElement>(null);
-
-//     useEffect(() => {
-//         if (videoRef.current) {
-//             videoRef.current.srcObject = stream;
-//             videoRef.current
-//                 .play()
-//                 .catch((err) => console.error("Error playing video:", err));
-//         }
-//     }, [stream]);
-
-//     return (
-//         <video
-//             ref={videoRef}
-//             autoPlay
-//             playsInline
-//             style={{ width: "100%", borderRadius: "8px" }}
-//         />
-//     );
-// };
-
 const Chat = () => {
     const focused = useAppSelector((state) => state.chat.focused);
     const officeChatMessages = useAppSelector(

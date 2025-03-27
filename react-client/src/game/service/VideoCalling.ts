@@ -1,29 +1,27 @@
 import Peer, { MediaConnection } from "peerjs";
 
-class PeerService {
-    private static instance: PeerService;
+class VideoCalling {
+    private static instance: VideoCalling;
     private connectedPeers = new Map<
-        string,
-        { call: MediaConnection; video: HTMLVideoElement }
-    >();
-    private calledPeers = new Map<
         string,
         { call: MediaConnection; video: HTMLVideoElement }
     >();
     private peer: Peer | null = null;
     private initializationPromise: Promise<Peer> | null = null;
-    private activeCallIds: Set<string> = new Set(); // Track active call IDs to prevent duplicates
     private videoContainer = document.querySelector("#video-container");
+    private screenContainer = document.querySelector("#screen-container");
     private myVideo = document.createElement("video");
+    private myScreen = document.createElement("video");
     myStream: MediaStream;
+    myScreenStream: MediaStream;
 
     private constructor() {}
 
-    public static getInstance(): PeerService {
-        if (!PeerService.instance) {
-            PeerService.instance = new PeerService();
+    public static getInstance(): VideoCalling {
+        if (!VideoCalling.instance) {
+            VideoCalling.instance = new VideoCalling();
         }
-        return PeerService.instance;
+        return VideoCalling.instance;
     }
 
     public getPeer(): Peer | null {
@@ -90,27 +88,25 @@ class PeerService {
         try {
             // Make the call
             const call = this.peer.call(userId, this.myStream);
-            const video = document.createElement("video");
 
-            this.connectedPeers.set(userId, { call, video });
+            if (call) {
+                const video = document.createElement("video");
 
-            // Track that we're calling this peer
-            this.activeCallIds.add(userId);
+                this.connectedPeers.set(userId, { call, video });
 
-            // Handle the stream when we get it
-            call.on("stream", (remoteStream) => {
-                console.log("Received stream from called peer:", userId);
-                this.addVideoStream(video, remoteStream);
-            });
+                // Handle the stream when we get it
+                call.on("stream", (remoteStream) => {
+                    console.log("Received stream from called peer:", userId);
+                    this.addVideoStream(video, remoteStream);
+                });
 
-            // Handle call closure
-            call.on("close", () => {
-                console.log("Call to", userId, "closed");
-                this.activeCallIds.delete(userId);
-            });
+                // Handle call closure
+                call.on("close", () => {
+                    console.log("Call to", userId, "closed");
+                });
+            }
         } catch (err) {
             console.error("Error calling peer", userId, ":", err);
-            this.activeCallIds.delete(userId);
             throw err;
         }
     }
@@ -156,6 +152,16 @@ class PeerService {
         }
     }
 
+    private addScreenStream(video: HTMLVideoElement, stream: MediaStream) {
+        video.srcObject = stream;
+        video.playsInline = true;
+        video.addEventListener("loadeddata", () => video.play());
+
+        if (this.screenContainer) {
+            this.screenContainer.appendChild(video);
+        }
+    }
+
     getUserMedia() {
         navigator.mediaDevices
             .getUserMedia({
@@ -168,6 +174,13 @@ class PeerService {
             });
     }
 
+    getUserDisplayMedia() {
+        navigator.mediaDevices.getDisplayMedia().then((stream) => {
+            this.myScreenStream = stream;
+            this.addScreenStream(this.myScreen, stream);
+        });
+    }
+
     public destroyPeer(): void {
         if (this.peer) {
             this.peer.destroy();
@@ -177,4 +190,4 @@ class PeerService {
     }
 }
 
-export default PeerService.getInstance();
+export default VideoCalling.getInstance();

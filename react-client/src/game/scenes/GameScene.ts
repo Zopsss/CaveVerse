@@ -11,8 +11,17 @@ import {
 } from "../../app/features/chat/chatSlice";
 import store from "../../app/store";
 import Peer from "peerjs";
-import peerService from "../../app/peerService";
+import videoCalling from "../service/VideoCalling";
 import Network from "./Network";
+import screenSharing from "../service/ScreenSharing";
+import { sanitizeUserId } from "../../lib/utils";
+import {
+    clearPlayerNameMap,
+    disconnectUser,
+    removeAllPeerConnections,
+    removePlayerNameMap,
+    setPlayerNameMap,
+} from "../../app/features/webRtc/screenSlice";
 
 type OfficeType = "MAIN" | "EAST" | "NORTH_1" | "NORTH_2" | "WEST";
 type officeNames =
@@ -26,7 +35,6 @@ export class GameScene extends Phaser.Scene {
     room: Room;
     currentPlayer: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
     currentPlayerUsername: string;
-    currentSessionId: string;
     playerEntities: {
         [sessionId: string]: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
     } = {};
@@ -136,10 +144,10 @@ export class GameScene extends Phaser.Scene {
         }
 
         // get user media
-        peerService.getUserMedia();
+        videoCalling.getUserMedia();
 
         // initialize the peer
-        peerService
+        videoCalling
             .initializePeer(this.network.room.sessionId)
             .then((peer) => {
                 store.dispatch(setShowOfficeChat(true));
@@ -153,6 +161,25 @@ export class GameScene extends Phaser.Scene {
                 console.error("Failed to initialize peer:", error);
                 store.dispatch(setShowOfficeChat(true));
             });
+
+        // TODO: Instead of adding & removing data in playerNameMap
+        // as player joins or leaves a room,
+        // maintain this map from the moment player joins the game
+        const { members } = this.getOfficeData(this.currentSpace);
+        members.forEach((username, sessionId) => {
+            console.log(
+                "username: ",
+                username,
+                "sessionid: ",
+                sanitizeUserId(sessionId)
+            );
+            store.dispatch(
+                setPlayerNameMap({
+                    peerId: sanitizeUserId(sessionId),
+                    username: username,
+                })
+            );
+        });
     }
 
     // Helper method to get the appropriate state properties for each office
@@ -225,6 +252,45 @@ export class GameScene extends Phaser.Scene {
         } catch (e) {
             console.error(e);
         }
+    }
+
+    async handleScreenSharing() {
+        await screenSharing.getUserDisplayMedia();
+
+        const { members } = this.getOfficeData(this.currentSpace);
+        members.forEach((username, sessionId) => {
+            // preventing calling ourself
+            if (sessionId === this.network.room.sessionId) return;
+
+            screenSharing.shareScreen(sessionId);
+        });
+    }
+
+    /**
+     * letting other players know that the current player
+     * stopped his screen sharing.
+     */
+    playerStoppedScreenSharing() {
+        let currentOffice: OfficeType;
+        switch (this.currentSpace) {
+            case "mainOffice":
+                currentOffice = "MAIN";
+                break;
+            case "eastOffice":
+                currentOffice = "EAST";
+                break;
+            case "westOffice":
+                currentOffice = "WEST";
+                break;
+            case "northOffice1":
+                currentOffice = "NORTH_1";
+                break;
+            case "northOffice2":
+                currentOffice = "NORTH_2";
+                break;
+        }
+
+        this.network.room.send("USER_STOPPED_SCREEN_SHARING", currentOffice);
     }
 
     addNewMessage(content: string) {
@@ -323,12 +389,24 @@ export class GameScene extends Phaser.Scene {
 
             // Is current player
             if (sessionId === this.network.room.sessionId) {
+                console.log(
+                    "current player's sessionId: ",
+                    this.network.room.sessionId
+                );
                 this.currentPlayer = entity;
-                this.currentSessionId = sessionId;
                 this.physics.add.collider(this.currentPlayer, this.mapLayer);
                 this.cameras.main.startFollow(this.currentPlayer);
                 this.cameras.main.zoom = 1.7;
                 this.loadObjectsFromTiled();
+
+                screenSharing
+                    .initializePeer(this.network.room.sessionId)
+                    .then((peer) => {
+                        console.log(
+                            "peer initialized for screen sharing: ",
+                            peer.id
+                        );
+                    });
             } else {
                 // Other players
                 player.onChange(() => {
@@ -368,24 +446,38 @@ export class GameScene extends Phaser.Scene {
         });
 
         // TODO: Fix "Cannot call peer - No local stream available"
-        this.network.room.onMessage("CONNECT_TO_WEBRTC", async (userId) => {
-            try {
-                setTimeout(async () => {
-                    // Ensure PeerJS is initialized
-                    await peerService.initializePeer(
-                        this.network.room.sessionId
-                    );
+        this.network.room.onMessage(
+            "CONNECT_TO_WEBRTC",
+            async ({ peerId, username }) => {
+                try {
+                    setTimeout(async () => {
+                        // Ensure PeerJS is initialized
+                        await videoCalling.initializePeer(
+                            this.network.room.sessionId
+                        );
 
-                    // Call the new user
-                    await peerService.connectToNewUser(userId);
-                }, 3000);
-            } catch (err) {
-                console.error("Failed to connect to new user:", err);
+                        // Call the new user
+                        await videoCalling.connectToNewUser(peerId);
+                    }, 3000);
+                } catch (err) {
+                    console.error("Failed to connect to new user:", err);
+                }
+
+                store.dispatch(
+                    setPlayerNameMap({
+                        peerId: sanitizeUserId(peerId),
+                        username,
+                    })
+                );
+
+                screenSharing.shareScreen(peerId);
             }
-        });
+        );
 
         this.network.room.onMessage("DISCONNECT_FROM_WEBRTC", (userId) => {
-            peerService.disconnectUser(userId);
+            videoCalling.disconnectUser(userId);
+            store.dispatch(disconnectUser(userId));
+            store.dispatch(removePlayerNameMap(sanitizeUserId(userId)));
         });
 
         this.network.room.onMessage("NEW_GLOBAL_CHAT_MESSAGE", (serverData) => {
@@ -412,6 +504,10 @@ export class GameScene extends Phaser.Scene {
                 store.dispatch(addGlobalChat(allMessages));
             }
         );
+
+        this.network.room.onMessage("USER_STOPPED_SCREEN_SHARING", (userId) => {
+            store.dispatch(disconnectUser(userId));
+        });
     }
 
     async update(time: number, delta: number) {
@@ -574,7 +670,9 @@ export class GameScene extends Phaser.Scene {
             this.network.room.send(room, this.network.username);
             store.dispatch(clearOfficeChat()); // player left the office so clear the redux state as well
             store.dispatch(setShowOfficeChat(false));
-            peerService.removeAllPeerConnections();
+            videoCalling.removeAllPeerConnections();
+            store.dispatch(removeAllPeerConnections());
+            store.dispatch(clearPlayerNameMap());
             this.currentSpace = null;
             this.prevSpace = null;
         }

@@ -26,18 +26,20 @@ export class MyRoomState extends Schema {
 
     @type([OfficeChat]) globalChat = new ArraySchema<OfficeChat>(); // storing global chat messages
 
-    @type({ set: "string" }) mainOfficeMembers = new SetSchema<string>(); // storing sessionId's of user present in main office
+    // storing members' sessionId and username as key-value pair
+    // this is required to fetch member's username for screen sharing purposes.
+    @type({ map: "string" }) mainOfficeMembers = new MapSchema<string>();
     @type([OfficeChat]) mainOfficeChat = new ArraySchema<OfficeChat>(); // storing main office's chat messages
 
-    @type({ set: "string" }) eastOfficeMembers = new SetSchema<string>();
+    @type({ map: "string" }) eastOfficeMembers = new MapSchema<string>();
     @type([OfficeChat]) eastOfficeChat = new ArraySchema<OfficeChat>();
 
-    @type({ set: "string" }) northOffice1Members = new SetSchema<string>();
+    @type({ map: "string" }) northOffice1Members = new MapSchema<string>();
     @type([OfficeChat]) northOffice1Chat = new ArraySchema<OfficeChat>();
 
-    @type({ set: "string" }) northOffice2Members = new SetSchema<string>();
+    @type({ map: "string" }) northOffice2Members = new MapSchema<string>();
     @type([OfficeChat]) northOffice2Chat = new ArraySchema<OfficeChat>();
 
-    @type({ set: "string" }) westOfficeMembers = new SetSchema<string>();
+    @type({ map: "string" }) westOfficeMembers = new MapSchema<string>();
     @type([OfficeChat]) westOfficeChat = new ArraySchema<OfficeChat>();
 }
