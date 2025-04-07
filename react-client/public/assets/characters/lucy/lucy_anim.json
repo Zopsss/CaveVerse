@@ -1,0 +1,260 @@
+{
+    "anims": [
+        {
+            "key": "lucy_down_run",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_19"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_20"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_21"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_22"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_23"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_24"
+                }
+            ]
+        },
+        {
+            "key": "lucy_up_run",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_7"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_8"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_9"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_10"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_11"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_12"
+                }
+            ]
+        },
+        {
+            "key": "lucy_right_run",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_1"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_2"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_3"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_4"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_5"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_6"
+                }
+            ]
+        },
+        {
+            "key": "lucy_left_run",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_13"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_14"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_15"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_16"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_17"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_run_18"
+                }
+            ]
+        },
+        {
+            "key": "lucy_down_idle",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_19"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_20"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_21"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_22"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_23"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_24"
+                }
+            ]
+        },
+        {
+            "key": "lucy_up_idle",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_7"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_8"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_9"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_10"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_11"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_12"
+                }
+            ]
+        },
+        {
+            "key": "lucy_right_idle",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_1"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_2"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_3"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_4"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_5"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_6"
+                }
+            ]
+        },
+        {
+            "key": "lucy_left_idle",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_13"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_14"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_15"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_16"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_17"
+                },
+                {
+                    "key": "lucy",
+                    "frame": "lucy_idle_anim_18"
+                }
+            ]
+        }
+    ]
+}

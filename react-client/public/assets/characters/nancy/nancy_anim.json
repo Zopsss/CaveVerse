@@ -1,0 +1,260 @@
+{
+    "anims": [
+        {
+            "key": "nancy_down_run",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_19"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_20"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_21"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_22"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_23"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_24"
+                }
+            ]
+        },
+        {
+            "key": "nancy_up_run",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_7"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_8"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_9"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_10"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_11"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_12"
+                }
+            ]
+        },
+        {
+            "key": "nancy_right_run",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_1"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_2"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_3"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_4"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_5"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_6"
+                }
+            ]
+        },
+        {
+            "key": "nancy_left_run",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_13"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_14"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_15"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_16"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_17"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_run_18"
+                }
+            ]
+        },
+        {
+            "key": "nancy_down_idle",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_19"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_20"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_21"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_22"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_23"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_24"
+                }
+            ]
+        },
+        {
+            "key": "nancy_up_idle",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_7"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_8"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_9"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_10"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_11"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_12"
+                }
+            ]
+        },
+        {
+            "key": "nancy_right_idle",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_1"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_2"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_3"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_4"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_5"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_6"
+                }
+            ]
+        },
+        {
+            "key": "nancy_left_idle",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_13"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_14"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_15"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_16"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_17"
+                },
+                {
+                    "key": "nancy",
+                    "frame": "nancy_idle_anim_18"
+                }
+            ]
+        }
+    ]
+}

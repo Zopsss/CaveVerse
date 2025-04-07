@@ -1,0 +1,260 @@
+{
+    "anims": [
+        {
+            "key": "ash_down_run",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "ash",
+                    "frame": "ash_run_19"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_20"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_21"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_22"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_23"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_24"
+                }
+            ]
+        },
+        {
+            "key": "ash_left_run",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "ash",
+                    "frame": "ash_run_13"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_14"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_15"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_16"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_17"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_18"
+                }
+            ]
+        },
+        {
+            "key": "ash_up_run",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "ash",
+                    "frame": "ash_run_7"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_8"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_9"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_10"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_11"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_12"
+                }
+            ]
+        },
+        {
+            "key": "ash_right_run",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "ash",
+                    "frame": "ash_run_1"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_2"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_3"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_4"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_5"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_run_6"
+                }
+            ]
+        },
+        {
+            "key": "ash_down_idle",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_19"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_20"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_21"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_22"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_23"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_24"
+                }
+            ]
+        },
+        {
+            "key": "ash_left_idle",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_13"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_14"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_15"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_16"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_17"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_18"
+                }
+            ]
+        },
+        {
+            "key": "ash_up_idle",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_7"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_8"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_9"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_10"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_11"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_12"
+                }
+            ]
+        },
+        {
+            "key": "ash_right_idle",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_1"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_2"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_3"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_4"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_5"
+                },
+                {
+                    "key": "ash",
+                    "frame": "ash_idle_anim_6"
+                }
+            ]
+        }
+    ]
+}

@@ -48,6 +48,7 @@ export class GameScene extends Phaser.Scene {
     network: Network;
     currentSpace: officeNames;
     prevSpace: officeNames;
+    lastPressedKey = "down";
 
     constructor() {
         super({ key: "GameScene" });
@@ -375,11 +376,14 @@ export class GameScene extends Phaser.Scene {
 
         this.network.room.state.players.onAdd((player, sessionId) => {
             console.log("player added: ", sessionId);
+            // hardcoding player's character here
+            // it doesn't affect as update method is called in loop
+            // so it'll add the real character even before game loads.
             const entity = this.physics.add.sprite(
                 player.x,
                 player.y,
-                "queen",
-                "queen_idle"
+                "nancy",
+                "nancy_down_idle"
             );
 
             entity.setDepth(100);
@@ -523,33 +527,67 @@ export class GameScene extends Phaser.Scene {
         // Apply movement using velocity instead of position
         if (this.cursorKeys.left.isDown) {
             this.currentPlayer.setVelocityX(-velocity);
+            this.currentPlayer.anims.play(
+                `${this.network.character}_left_run`,
+                true
+            );
+            this.network.room.send(0, {
+                playerX: this.currentPlayer.x,
+                playerY: this.currentPlayer.y,
+                anim: `${this.network.character}_left_run`,
+            });
+            this.lastPressedKey = "left";
         } else if (this.cursorKeys.right.isDown) {
             this.currentPlayer.setVelocityX(velocity);
+            this.currentPlayer.anims.play(
+                `${this.network.character}_right_run`,
+                true
+            );
+            this.network.room.send(0, {
+                playerX: this.currentPlayer.x,
+                playerY: this.currentPlayer.y,
+                anim: `${this.network.character}_right_run`,
+            });
+            this.lastPressedKey = "right";
         } else if (this.cursorKeys.up.isDown) {
             this.currentPlayer.setVelocityY(-velocity);
+            this.currentPlayer.anims.play(
+                `${this.network.character}_up_run`,
+                true
+            );
+            this.network.room.send(0, {
+                playerX: this.currentPlayer.x,
+                playerY: this.currentPlayer.y,
+                anim: `${this.network.character}_up_run`,
+            });
+            this.lastPressedKey = "up";
         } else if (this.cursorKeys.down.isDown) {
             this.currentPlayer.setVelocityY(velocity);
-        }
-
-        const currVelocity = this.currentPlayer.body.velocity;
-        if (Math.abs(currVelocity.x) > 0.1 || Math.abs(currVelocity.y) > 0.1) {
-            this.currentPlayer.anims.play("queen_walk", true);
+            this.currentPlayer.anims.play(
+                `${this.network.character}_down_run`,
+                true
+            );
             this.network.room.send(0, {
                 playerX: this.currentPlayer.x,
                 playerY: this.currentPlayer.y,
-                anim: "queen_walk",
+                anim: `${this.network.character}_down_run`,
             });
+            this.lastPressedKey = "down";
         } else {
-            this.currentPlayer.anims.play("queen_idle", true);
+            this.currentPlayer.anims.play(
+                `${this.network.character}_${this.lastPressedKey}_idle`,
+                true
+            );
             this.network.room.send(0, {
                 playerX: this.currentPlayer.x,
                 playerY: this.currentPlayer.y,
-                anim: "queen_idle",
+                anim: `${this.network.character}_${this.lastPressedKey}_idle`,
             });
         }
 
         // interpolate other players.
         for (let sessionId in this.playerEntities) {
+            // skipping current player
             if (sessionId === this.network.room.sessionId) continue;
 
             const entity = this.playerEntities[sessionId];

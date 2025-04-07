@@ -10,8 +10,39 @@ export class Bootstrap extends Phaser.Scene {
     }
 
     preload() {
-        this.load.atlas("queen", "assets/queen.png", "assets/queen_atlas.json");
-        this.load.animation("queen_anim", "assets/queen_anim.json");
+        this.load.atlas(
+            "nancy",
+            "assets/characters/nancy/nancy.png",
+            "assets/characters/nancy/nancy_atlas.json"
+        );
+        this.load.animation(
+            "nancy_anim",
+            "assets/characters/nancy/nancy_anim.json"
+        );
+        this.load.atlas(
+            "ash",
+            "assets/characters/ash/ash.png",
+            "assets/characters/ash/ash_atlas.json"
+        );
+        this.load.animation("ash_anim", "assets/characters/ash/ash_anim.json");
+        this.load.atlas(
+            "lucy",
+            "assets/characters/lucy/lucy.png",
+            "assets/characters/lucy/lucy_atlas.json"
+        );
+        this.load.animation(
+            "lucy_anim",
+            "assets/characters/lucy/lucy_anim.json"
+        );
+        this.load.atlas(
+            "adam",
+            "assets/characters/adam/adam.png",
+            "assets/characters/adam/adam_atlas.json"
+        );
+        this.load.animation(
+            "adam_anim",
+            "assets/characters/adam/adam_anim.json"
+        );
         this.load.tilemapTiledJSON("map", "/assets/map/map.json");
         this.load.spritesheet("chair", "assets/items/chair.png", {
             frameWidth: 32,

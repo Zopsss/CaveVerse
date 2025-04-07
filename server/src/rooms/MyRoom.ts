@@ -271,7 +271,7 @@ export class MyRoom extends Room<MyRoomState> {
         player.x = 550;
         player.y = 820;
         player.username = options.username;
-        player.anim = "queen_idle";
+        player.anim = `${options.character}_down_idle`;
 
         this.state.players.set(client.sessionId, player);
 

@@ -12,7 +12,7 @@ export class Player extends Schema {
     @type("number") x: number;
     @type("number") y: number;
     @type("string") username: string;
-    @type("string") anim: "queen_idle" | "queen_walk";
+    @type("string") anim: string;
 }
 
 export class OfficeChat extends Schema {

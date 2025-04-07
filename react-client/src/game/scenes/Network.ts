@@ -11,6 +11,7 @@ export default class Network {
     room!: Room;
     lobby!: Room;
     username: string;
+    character: string;
 
     constructor() {
         this.client = new Client(BACKEND_URL);
@@ -56,10 +57,12 @@ export default class Network {
         });
     }
 
-    async joinOrCreatePublicRoom(username: string) {
+    async joinOrCreatePublicRoom(username: string, character: string) {
         this.username = username;
+        this.character = character;
         this.room = await this.client.joinOrCreate("PUBLIC_ROOM", {
             username: this.username,
+            character: this.character,
         });
         this.lobby.leave();
     }
@@ -67,9 +70,11 @@ export default class Network {
     async createPrivateRoom(
         username: string,
         name: string,
-        password: string | null
+        password: string | null,
+        character: string
     ) {
         this.username = username;
+        this.character = character;
         this.room = await this.client.create("PRIVATE_ROOM", {
             name,
             password,
@@ -81,9 +86,11 @@ export default class Network {
     async joinPrivateRoom(
         username: string,
         roomId: string,
-        password: string | null
+        password: string | null,
+        character: string
     ) {
         this.username = username;
+        this.character = character;
         console.log("room Id: ", roomId);
         this.room = await this.client.joinById(roomId, {
             password,
