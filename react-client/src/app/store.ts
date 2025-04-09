@@ -1,6 +1,5 @@
 import { Action, configureStore, ThunkAction } from "@reduxjs/toolkit";
 import chatReducer from "./features/chat/chatSlice";
-import webrtcReducer from "./features/webRtc/webRtcSlice";
 import roomReducer from "./features/room/roomSlice";
 import screenReducer from "./features/webRtc/screenSlice";
 import { enableMapSet } from "immer";
@@ -12,7 +11,6 @@ enableMapSet();
 const store = configureStore({
     reducer: {
         chat: chatReducer,
-        webrtc: webrtcReducer,
         room: roomReducer,
         screen: screenReducer,
     },
