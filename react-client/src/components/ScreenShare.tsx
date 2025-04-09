@@ -6,7 +6,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "./ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import phaserGame from "../game/main";
@@ -20,10 +19,15 @@ import FullScreenPlayer from "./FullScreenPlayer";
 import store from "../app/store";
 import { stopScreenSharing } from "../app/features/webRtc/screenSlice";
 
-const ScreenShare = () => {
+const ScreenShare = ({
+    screenDialogOpen,
+    setScreenDialogOpen,
+}: {
+    screenDialogOpen: boolean;
+    setScreenDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}) => {
     const peerStreams = useAppSelector((state) => state.screen.peerStreams);
     const myStream = useAppSelector((state) => state.screen.myScreenStream);
-    const [open, setOpen] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [streamToDisplay, setStreamToDisplay] = useState<MediaStream>();
     const [username, setUsername] = useState("");
@@ -32,7 +36,7 @@ const ScreenShare = () => {
     const handleScreenSharing = async () => {
         const gameInstance = phaserGame.scene.keys.GameScene as GameScene;
         await gameInstance.handleScreenSharing();
-        setOpen(false);
+        setScreenDialogOpen(false);
         toast(<div className="font-semibold">Started Screen Sharing</div>);
     };
 
@@ -74,15 +78,7 @@ const ScreenShare = () => {
 
     return (
         <>
-            <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger asChild>
-                    <Button
-                        variant="outline"
-                        className="cursor-pointer absolute left-7 bottom-7"
-                    >
-                        Screen Sharing
-                    </Button>
-                </DialogTrigger>
+            <Dialog open={screenDialogOpen} onOpenChange={setScreenDialogOpen}>
                 <DialogContent className="h-[50%] flex flex-col justify-between">
                     <DialogHeader className="mt-3">
                         <DialogTitle className="text-center">

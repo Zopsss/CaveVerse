@@ -105,20 +105,25 @@ export class MyRoom extends Room<MyRoomState> {
     ) {
         const sessionId = client.sessionId;
         const { name, chat, members } = this.getOfficeData(officeType);
+        // if condition is required when user haven't given his webcam permission yet, otherwise servers gives this error:
+        // @colyseus/schema MapSchema: trying to delete non-existing index: vd04glYYb (undefined)
+        // TODO: don't know why this is happening, need to investigate it!!!!
+        if (members.has(sessionId)) {
+            const newMessage = new OfficeChat();
+            newMessage.username = username;
+            newMessage.message = `Left ${name} lobby`;
+            newMessage.type = "PLAYER_LEFT";
 
-        const newMessage = new OfficeChat();
-        newMessage.username = username;
-        newMessage.message = `Left ${name} lobby`;
-        newMessage.type = "PLAYER_LEFT";
+            chat.push(newMessage);
 
-        chat.push(newMessage);
-        members.delete(sessionId);
+            members.delete(sessionId);
 
-        this.clients.forEach((member) => {
-            if (members.has(member.sessionId)) {
-                member.send("DISCONNECT_FROM_WEBRTC", client.sessionId);
-            }
-        });
+            this.clients.forEach((member) => {
+                if (members.has(member.sessionId)) {
+                    member.send("DISCONNECT_FROM_WEBRTC", client.sessionId);
+                }
+            });
+        }
     }
 
     private handleAddMessage(officeType: OfficeType, input: InputMessageType) {

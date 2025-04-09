@@ -11,6 +11,7 @@
     "dependencies": {
         "@radix-ui/react-dialog": "^1.1.6",
         "@radix-ui/react-slot": "^1.1.2",
+        "@radix-ui/react-tooltip": "^1.2.0",
         "@reduxjs/toolkit": "^2.6.0",
         "@tailwindcss/vite": "^4.0.9",
         "class-variance-authority": "^0.7.1",
@@ -19,6 +20,7 @@
         "embla-carousel-react": "^8.5.2",
         "immer": "^10.1.1",
         "lucide-react": "^0.476.0",
+        "motion": "^12.6.3",
         "next-themes": "^0.4.6",
         "peerjs": "^1.5.4",
         "phaser": "^3.88.2",

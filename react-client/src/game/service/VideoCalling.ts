@@ -1,3 +1,8 @@
+import {
+    setMyWebcamStream,
+    turnOffWebcamAndMic,
+} from "../../app/features/webRtc/webcamSlice";
+import store from "../../app/store";
 import Peer, { MediaConnection } from "peerjs";
 
 class VideoCalling {
@@ -9,11 +14,7 @@ class VideoCalling {
     private peer: Peer | null = null;
     private initializationPromise: Promise<Peer> | null = null;
     private videoContainer = document.querySelector("#video-container");
-    private screenContainer = document.querySelector("#screen-container");
     private myVideo = document.createElement("video");
-    private myScreen = document.createElement("video");
-    myStream: MediaStream;
-    myScreenStream: MediaStream;
 
     private constructor() {}
 
@@ -53,7 +54,7 @@ class VideoCalling {
 
             peer.on("call", (call) => {
                 if (!this.connectedPeers.has(call.peer)) {
-                    call.answer(this.myStream);
+                    call.answer(store.getState().webcam.myWebcamStream);
                     const video = document.createElement("video");
                     this.connectedPeers.set(call.peer, { call, video });
                     call.on("stream", (userStream) => {
@@ -87,7 +88,10 @@ class VideoCalling {
 
         try {
             // Make the call
-            const call = this.peer.call(userId, this.myStream);
+            const call = this.peer.call(
+                userId,
+                store.getState().webcam.myWebcamStream
+            );
 
             if (call) {
                 const video = document.createElement("video");
@@ -128,9 +132,8 @@ class VideoCalling {
     public removeAllPeerConnections() {
         // if condition is required otherwise an infinite loops starts
         // if user leaves the office without giving access to his webcam.
-        if (this.myStream) {
-            this.myStream.getTracks()[0].enabled = false;
-            this.myStream.getTracks()[1].enabled = false;
+        if (store.getState().webcam.myWebcamStream) {
+            store.dispatch(turnOffWebcamAndMic());
             this.myVideo.remove();
         }
 
@@ -152,16 +155,6 @@ class VideoCalling {
         }
     }
 
-    private addScreenStream(video: HTMLVideoElement, stream: MediaStream) {
-        video.srcObject = stream;
-        video.playsInline = true;
-        video.addEventListener("loadeddata", () => video.play());
-
-        if (this.screenContainer) {
-            this.screenContainer.appendChild(video);
-        }
-    }
-
     getUserMedia() {
         navigator.mediaDevices
             .getUserMedia({
@@ -169,16 +162,9 @@ class VideoCalling {
                 video: true,
             })
             .then((stream) => {
-                this.myStream = stream;
+                store.dispatch(setMyWebcamStream(stream));
                 this.addVideoStream(this.myVideo, stream);
             });
-    }
-
-    getUserDisplayMedia() {
-        navigator.mediaDevices.getDisplayMedia().then((stream) => {
-            this.myScreenStream = stream;
-            this.addScreenStream(this.myScreen, stream);
-        });
     }
 
     public destroyPeer(): void {

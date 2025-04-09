@@ -114,6 +114,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* TODO: Remove this and use framer motion instead */
 @theme {
   --animate-fade-in-scale: fade-in-scale 0.3s ease-out;
 
