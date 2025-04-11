@@ -9,6 +9,7 @@ interface InputMessageType {
 export class MyRoom extends Room<MyRoomState> {
     room: string;
     roomPassword: string;
+    hasPassword = false;
 
     // for debugging purpose only
     getAllMessages() {
@@ -140,6 +141,8 @@ export class MyRoom extends Room<MyRoomState> {
         client: Client,
         options: { roomName: string; password: string | null }
     ) {
+        if (!this.roomPassword) return true;
+
         if (this.roomPassword === options.password) {
             return true;
         }
@@ -149,7 +152,8 @@ export class MyRoom extends Room<MyRoomState> {
     onCreate(options: { name: string; password: string | null }) {
         this.room = options.name;
         this.roomPassword = options.password;
-        this.setMetadata({ name: options.name });
+        if (options.password) this.hasPassword = true;
+        this.setMetadata({ name: options.name, hasPassword: this.hasPassword });
 
         this.setState(new MyRoomState());
 
@@ -270,6 +274,7 @@ export class MyRoom extends Room<MyRoomState> {
 
     onJoin(client: Client, options: any) {
         console.log(client.sessionId, "joined!");
+        console.log("options: ", options);
 
         const player = new Player();
 

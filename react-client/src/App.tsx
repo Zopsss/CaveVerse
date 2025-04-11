@@ -1,6 +1,6 @@
 import Chat from "./components/Chat";
 import { useAppSelector } from "./app/hooks";
-import RoomSelection from "./components/RoomSelection";
+import RoomSelection from "./components/RoomSelection/RoomSelection";
 import ScreenShare from "./components/ScreenShare";
 import { useState } from "react";
 import FloatingActions from "./components/FloatingActions";

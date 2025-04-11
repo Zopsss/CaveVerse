@@ -1,14 +1,7 @@
 import store from "../app/store";
 import { useAppSelector } from "../app/hooks";
 import { Button } from "./ui/button";
-import {
-    Camera,
-    CameraOff,
-    Mic,
-    MicOff,
-    ScreenShare,
-    Webcam,
-} from "lucide-react";
+import { Camera, CameraOff, Mic, MicOff, ScreenShare } from "lucide-react";
 import { toggleMic, toggleWebcam } from "../app/features/webRtc/webcamSlice";
 import {
     Tooltip,

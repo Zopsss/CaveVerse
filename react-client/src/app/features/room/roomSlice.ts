@@ -2,7 +2,11 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 const initialState = {
     roomJoined: false,
-    availableRooms: new Array<{ roomName: string; roomId: string }>(),
+    availableRooms: new Array<{
+        roomName: string;
+        roomId: string;
+        hasPassword: boolean;
+    }>(),
 };
 
 const roomSlice = createSlice({
@@ -14,7 +18,11 @@ const roomSlice = createSlice({
         },
         addAvailableRooms: (
             state,
-            action: PayloadAction<{ roomName: string; roomId: string }>
+            action: PayloadAction<{
+                roomName: string;
+                roomId: string;
+                hasPassword: boolean;
+            }>
         ) => {
             state.availableRooms.push(action.payload);
         },

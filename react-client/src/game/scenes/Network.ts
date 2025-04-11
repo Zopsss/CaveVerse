@@ -32,6 +32,7 @@ export default class Network {
                     addAvailableRooms({
                         roomId: room.roomId,
                         roomName: room.metadata.name,
+                        hasPassword: room.metadata.hasPassword,
                     })
                 );
             });
@@ -46,7 +47,11 @@ export default class Network {
             const existingRooms = store.getState().room.availableRooms;
             if (!existingRooms.some((r) => r.roomId === roomId)) {
                 store.dispatch(
-                    addAvailableRooms({ roomId, roomName: room.metadata.name })
+                    addAvailableRooms({
+                        roomId,
+                        roomName: room.metadata.name,
+                        hasPassword: room.metadata.hasPassword,
+                    })
                 );
             }
         });
@@ -67,7 +72,7 @@ export default class Network {
         this.lobby.leave();
     }
 
-    async createPrivateRoom(
+    async createCustomRoom(
         username: string,
         name: string,
         password: string | null,
@@ -83,7 +88,7 @@ export default class Network {
         this.lobby.leave();
     }
 
-    async joinPrivateRoom(
+    async joinCustomRoom(
         username: string,
         roomId: string,
         password: string | null,
