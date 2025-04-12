@@ -5,9 +5,14 @@ import { useAppSelector } from "../app/hooks";
 import { GameScene } from "../game/scenes/GameScene";
 import phaserGame from "../game/main";
 import { Button } from "./ui/button";
+import { MessageCircle, X } from "lucide-react";
 
 const Chat = () => {
     const focused = useAppSelector((state) => state.chat.focused);
+    const [activeChat, setActiveChat] = useState<"Global" | "OfficeSpecific">(
+        "Global"
+    );
+    const [showChat, setShowChat] = useState(true);
     const officeChatMessages = useAppSelector(
         (state) => state.chat.officeChatMessages
     );
@@ -15,9 +20,6 @@ const Chat = () => {
         (state) => state.chat.globalChatMessages
     );
     const showOfficeChat = useAppSelector((state) => state.chat.showOfficeChat);
-    const [activeChat, setActiveChat] = useState<"Global" | "OfficeSpecific">(
-        "Global"
-    );
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -53,15 +55,29 @@ const Chat = () => {
     }, [showOfficeChat]);
 
     const buttonCss =
-        "font-semibold text-lg text-center mt-3 w-[50%] bg-indigo-800/30 cursor-pointer rounded-xs hover:bg-indigo-100 hover:text-indigo-500";
+        "font-semibold text-lg text-center grow cursor-default rounded-xs bg-indigo-800/30 text-indigo-50 cursor-pointer hover:bg-white hover:text-indigo-500";
     const activeChatCss = "bg-indigo-500 text-indigo-50";
+
+    if (!showChat) {
+        return (
+            <div className="absolute bottom-10 right-7">
+                <Button
+                    variant="ghost"
+                    className="w-14 p-7 bg-white rounded-full cursor-pointer shadow-black/30 shadow-lg"
+                    onClick={() => setShowChat(true)}
+                >
+                    <MessageCircle />
+                </Button>
+            </div>
+        );
+    }
 
     return (
         <>
-            <div className="absolute right-0 w-72 lg:w-96 h-screen rounded-sm border bg-indigo-950 border-indigo-500 text-white flex flex-col px-2">
+            <div className="absolute right-0 w-fit lg:w-96 h-screen rounded-sm border bg-indigo-950 border-indigo-500 text-white flex flex-col px-2">
                 <div className="flex items-center justify-around gap-1">
                     {showOfficeChat ? (
-                        <>
+                        <div className="flex items-center justify-between gap-1 w-full mt-3">
                             <Button
                                 className={`${buttonCss} ${
                                     activeChat === "Global" && activeChatCss
@@ -70,7 +86,6 @@ const Chat = () => {
                             >
                                 Global Chat
                             </Button>
-
                             <Button
                                 className={`${buttonCss} ${
                                     activeChat === "OfficeSpecific" &&
@@ -80,11 +95,31 @@ const Chat = () => {
                             >
                                 Office Chat
                             </Button>
-                        </>
+                            <Button
+                                variant="secondary"
+                                className="rounded-xs cursor-pointer"
+                                onClick={() => {
+                                    setShowChat(false);
+                                }}
+                            >
+                                <X />
+                            </Button>
+                        </div>
                     ) : (
-                        <Button className="font-semibold text-lg text-center mt-3 w-full cursor-default rounded-xs bg-indigo-500 text-indigo-50 hover:bg-indigo-500">
-                            Global Chat
-                        </Button>
+                        <div className="flex items-center justify-between gap-1 w-full mt-3">
+                            <Button className="font-semibold text-lg text-center grow cursor-default rounded-xs bg-indigo-500 text-indigo-50 hover:bg-indigo-500">
+                                Global Chat
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                className="rounded-xs cursor-pointer"
+                                onClick={() => {
+                                    setShowChat(false);
+                                }}
+                            >
+                                <X />
+                            </Button>
+                        </div>
                     )}
                 </div>
 
