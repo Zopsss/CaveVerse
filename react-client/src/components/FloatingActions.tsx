@@ -54,7 +54,37 @@ const FloatingActions = ({
                 {/* Webcam */}
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <WebcamButton isWebcamOn={isWebcamOn} />
+                        <Button
+                            variant="outline"
+                            className="cursor-pointer transition-all ease-in-out"
+                            onClick={() => {
+                                store.dispatch(toggleWebcam());
+                            }}
+                        >
+                            <AnimatePresence mode="wait" initial={false}>
+                                {isWebcamOn ? (
+                                    <motion.div
+                                        key="webcam"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <Camera />
+                                    </motion.div>
+                                ) : (
+                                    <motion.div
+                                        key="mic-off"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <CameraOff />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </Button>
                     </TooltipTrigger>
                     <TooltipContent>
                         <p className="text-black">
@@ -66,7 +96,37 @@ const FloatingActions = ({
                 {/* Mic */}
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <MicButton isMicOn={isMicOn} />
+                        <Button
+                            variant="outline"
+                            className="cursor-pointer transition-all ease-in-out"
+                            onClick={() => {
+                                store.dispatch(toggleMic());
+                            }}
+                        >
+                            <AnimatePresence mode="wait" initial={false}>
+                                {isMicOn ? (
+                                    <motion.div
+                                        key="mic"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <Mic />
+                                    </motion.div>
+                                ) : (
+                                    <motion.div
+                                        key="mic-off"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <MicOff />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </Button>
                     </TooltipTrigger>
                     <TooltipContent>
                         <p className="text-black">
@@ -76,78 +136,6 @@ const FloatingActions = ({
                 </Tooltip>
             </TooltipProvider>
         </motion.div>
-    );
-};
-
-const WebcamButton = ({ isWebcamOn }: { isWebcamOn: boolean }) => {
-    return (
-        <Button
-            variant="outline"
-            className="cursor-pointer transition-all ease-in-out"
-            onClick={() => {
-                store.dispatch(toggleWebcam());
-            }}
-        >
-            <AnimatePresence mode="wait" initial={false}>
-                {isWebcamOn ? (
-                    <motion.div
-                        key="webcam"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                        <Camera />
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        key="mic-off"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                        <CameraOff />
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </Button>
-    );
-};
-
-const MicButton = ({ isMicOn }: { isMicOn: boolean }) => {
-    return (
-        <Button
-            variant="outline"
-            className="cursor-pointer transition-all ease-in-out"
-            onClick={() => {
-                store.dispatch(toggleMic());
-            }}
-        >
-            <AnimatePresence mode="wait" initial={false}>
-                {isMicOn ? (
-                    <motion.div
-                        key="mic"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                        <Mic />
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        key="mic-off"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                        <MicOff />
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </Button>
     );
 };
 
