@@ -166,14 +166,6 @@ class VideoCalling {
                 this.addVideoStream(this.myVideo, stream);
             });
     }
-
-    public destroyPeer(): void {
-        if (this.peer) {
-            this.peer.destroy();
-            this.peer = null;
-            this.initializationPromise = null;
-        }
-    }
 }
 
 export default VideoCalling.getInstance();
