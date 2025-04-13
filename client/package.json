@@ -1,5 +1,5 @@
 {
-    "name": "react-client",
+    "name": "client",
     "description": "Frontend for CaveVerse",
     "version": "1.0.3",
     "scripts": {
