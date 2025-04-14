@@ -1,9 +1,15 @@
 import { useEffect, useRef } from "react";
 
-export const VideoPlayer: React.FC<{
+interface VideoPlayerProps extends React.VideoHTMLAttributes<HTMLVideoElement> {
     stream: MediaProvider;
     className?: string;
-}> = ({ stream, className }) => {
+}
+
+export const VideoPlayer: React.FC<VideoPlayerProps> = ({
+    stream,
+    className,
+    ...props
+}) => {
     const videoRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
@@ -19,6 +25,7 @@ export const VideoPlayer: React.FC<{
             autoPlay
             playsInline
             className={`rounded-lg ${className && className}`}
+            {...props}
         />
     );
 };

@@ -86,7 +86,10 @@ export class MyRoom extends Room<MyRoomState> {
                 members.has(member.sessionId) &&
                 member.sessionId !== client.sessionId
             ) {
-                member.send("CONNECT_TO_WEBRTC", { peerId, username });
+                member.send("CONNECT_TO_WEBRTC", {
+                    peerId: client.sessionId,
+                    username,
+                });
             }
         });
 

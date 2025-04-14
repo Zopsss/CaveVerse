@@ -1,4 +1,4 @@
-import { sanitizeUserId } from "../../lib/utils";
+import { sanitizeUserIdForScreenSharing } from "../../lib/utils";
 import {
     addScreenStream,
     setMyScreenStream,
@@ -39,7 +39,7 @@ class ScreenSharing {
 
         // Create a new initialization promise
         this.initializationPromise = new Promise((resolve, reject) => {
-            const sanitizedId = sanitizeUserId(userId);
+            const sanitizedId = sanitizeUserIdForScreenSharing(userId);
             const peer = new Peer(sanitizedId);
 
             peer.on("open", (id) => {
@@ -49,10 +49,8 @@ class ScreenSharing {
             });
 
             peer.on("call", (call) => {
-                console.log("in oncall in screen sharing...");
                 call.answer();
                 call.on("stream", (userStream) => {
-                    console.log("screen stream Received");
                     store.dispatch(
                         addScreenStream({ peerId: call.peer, call, userStream })
                     );
@@ -76,12 +74,12 @@ class ScreenSharing {
 
         const myScreenStream = store.getState().screen.myScreenStream;
         if (!myScreenStream) {
-            console.log("user is not sharing his screen");
+            console.log("player is not sharing his screen");
             return;
         }
 
         try {
-            const userId = sanitizeUserId(sessionId);
+            const userId = sanitizeUserIdForScreenSharing(sessionId);
             console.log(
                 `${"calling: " + userId + " with my id: " + this.peer.id}`
             );
@@ -92,7 +90,7 @@ class ScreenSharing {
         }
     }
 
-    async getUserDisplayMedia() {
+    async getUserMedia() {
         const stream = await navigator.mediaDevices.getDisplayMedia();
         store.dispatch(setMyScreenStream(stream));
 
@@ -100,17 +98,8 @@ class ScreenSharing {
 
         // this is callled when player uses browser provided "stop screen sharing" button.
         track.onended = () => {
-            console.log("user stopped his screen.");
             store.dispatch(stopScreenSharing());
         };
-    }
-
-    public destroyPeer(): void {
-        if (this.peer) {
-            this.peer.destroy();
-            this.peer = null;
-            this.initializationPromise = null;
-        }
     }
 }
 

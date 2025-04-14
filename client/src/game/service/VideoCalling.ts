@@ -1,20 +1,15 @@
+import { sanitizeUserIdForVideoCalling } from "../../lib/utils";
 import {
+    addWebcamStream,
     setMyWebcamStream,
-    turnOffWebcamAndMic,
 } from "../../app/features/webRtc/webcamSlice";
 import store from "../../app/store";
-import Peer, { MediaConnection } from "peerjs";
+import Peer from "peerjs";
 
 class VideoCalling {
     private static instance: VideoCalling;
-    private connectedPeers = new Map<
-        string,
-        { call: MediaConnection; video: HTMLVideoElement }
-    >();
     private peer: Peer | null = null;
     private initializationPromise: Promise<Peer> | null = null;
-    private videoContainer = document.querySelector("#video-container");
-    private myVideo = document.createElement("video");
 
     private constructor() {}
 
@@ -42,9 +37,8 @@ class VideoCalling {
 
         // Create a new initialization promise
         this.initializationPromise = new Promise((resolve, reject) => {
-            const sanitizedId = this.sanitizeUserId(userId);
+            const sanitizedId = sanitizeUserIdForVideoCalling(userId);
             const peer = new Peer(sanitizedId);
-            this.myVideo.muted = true; // muting own video
 
             peer.on("open", (id) => {
                 this.peer = peer;
@@ -53,14 +47,12 @@ class VideoCalling {
             });
 
             peer.on("call", (call) => {
-                if (!this.connectedPeers.has(call.peer)) {
-                    call.answer(store.getState().webcam.myWebcamStream);
-                    const video = document.createElement("video");
-                    this.connectedPeers.set(call.peer, { call, video });
-                    call.on("stream", (userStream) => {
-                        this.addVideoStream(video, userStream);
-                    });
-                }
+                call.answer();
+                call.on("stream", (userStream) => {
+                    store.dispatch(
+                        addWebcamStream({ peerId: call.peer, call, userStream })
+                    );
+                });
             });
 
             peer.on("error", (error) => {
@@ -72,100 +64,38 @@ class VideoCalling {
         return this.initializationPromise;
     }
 
-    // PeerJS throws invalid_id error if it contains some characters such as that colyseus generates.
-    // https://peerjs.com/docs.html#peer-id
-    private sanitizeUserId(userId: string) {
-        return userId.replace(/[^0-9a-z]/gi, "X");
-    }
-
-    public async connectToNewUser(userId: string): Promise<void> {
+    public shareWebcam(sessionId: string) {
         if (!this.peer) {
             console.error("Cannot call peer - Peer not initialized");
             throw new Error("Peer not initialized");
         }
 
-        console.log("Calling peer:", userId, "with my ID:", this.peer.id);
+        const myWebcamStream = store.getState().webcam.myWebcamStream;
+        if (!myWebcamStream) {
+            console.log("player is not sharing his webcam");
+            return;
+        }
 
         try {
-            // Make the call
-            const call = this.peer.call(
-                userId,
-                store.getState().webcam.myWebcamStream
+            const userId = sanitizeUserIdForVideoCalling(sessionId);
+            console.log(
+                `${"calling: " + userId + " with my id: " + this.peer.id}`
             );
-
-            if (call) {
-                const video = document.createElement("video");
-
-                this.connectedPeers.set(userId, { call, video });
-
-                // Handle the stream when we get it
-                call.on("stream", (remoteStream) => {
-                    console.log("Received stream from called peer:", userId);
-                    this.addVideoStream(video, remoteStream);
-                });
-
-                // Handle call closure
-                call.on("close", () => {
-                    console.log("Call to", userId, "closed");
-                });
-            }
+            this.peer.call(userId, myWebcamStream);
         } catch (err) {
-            console.error("Error calling peer", userId, ":", err);
+            console.error("Error while sharing screen: ", err);
             throw err;
         }
     }
 
-    // TODO: Remove video when user closes the site when he's inside of office.
-    // disconnect remote player when he leaves the office.
-    public disconnectUser(userId: string) {
-        const sanitizedId = this.sanitizeUserId(userId);
-
-        if (this.connectedPeers.has(sanitizedId)) {
-            const peer = this.connectedPeers.get(sanitizedId);
-            peer.call.close();
-            peer.video.remove();
-            this.connectedPeers.delete(sanitizedId);
-        }
-    }
-
-    // disconnect all the connected peers with current player when he leaves the office.
-    public removeAllPeerConnections() {
-        // if condition is required otherwise an infinite loops starts
-        // if user leaves the office without giving access to his webcam.
-        if (store.getState().webcam.myWebcamStream) {
-            store.dispatch(turnOffWebcamAndMic());
-            this.myVideo.remove();
-        }
-
-        this.connectedPeers.forEach((peer) => {
-            peer.call.close();
-            peer.video.remove();
+    getUserMedia = async () => {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: true,
         });
 
-        this.connectedPeers.clear();
-    }
-
-    private addVideoStream(video: HTMLVideoElement, stream: MediaStream) {
-        video.srcObject = stream;
-        video.playsInline = true;
-        video.addEventListener("loadeddata", () => video.play());
-
-        if (this.videoContainer) {
-            this.videoContainer.appendChild(video);
-        }
-    }
-
-    getUserMedia() {
-        navigator.mediaDevices
-            .getUserMedia({
-                audio: true,
-                video: true,
-            })
-            .then((stream) => {
-                store.dispatch(setMyWebcamStream(stream));
-                this.addVideoStream(this.myVideo, stream);
-            });
-    }
+        store.dispatch(setMyWebcamStream(stream));
+    };
 }
 
 export default VideoCalling.getInstance();

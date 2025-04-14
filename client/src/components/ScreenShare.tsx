@@ -95,7 +95,7 @@ const ScreenShare = ({
                         {peerStreams.size > 0 || myStream ? (
                             <>
                                 {myStream && (
-                                    <Card className="">
+                                    <Card>
                                         <CardHeader>
                                             <CardTitle className="truncate">
                                                 Your Screen
