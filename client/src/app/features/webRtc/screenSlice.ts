@@ -1,5 +1,5 @@
 import phaserGame from "../../../game/main";
-import { sanitizeUserId } from "../../../lib/utils";
+import { sanitizeUserIdForScreenSharing } from "../../../lib/utils";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { MediaConnection } from "peerjs";
 import { GameScene } from "../../../game/scenes/GameScene";
@@ -40,8 +40,11 @@ const screenReducer = createSlice({
             state.peerStreams.set(peerId, { call, stream, username });
         },
         /** disconnect remote player when he leaves the office. */
-        disconnectUser: (state, action: PayloadAction<string>) => {
-            const sanitizedId = sanitizeUserId(action.payload);
+        disconnectUserForScreenSharing: (
+            state,
+            action: PayloadAction<string>
+        ) => {
+            const sanitizedId = sanitizeUserIdForScreenSharing(action.payload);
 
             const peer = state.peerStreams.get(sanitizedId);
             peer.call.close();
@@ -51,7 +54,7 @@ const screenReducer = createSlice({
          * disconnect all the connected peers with current player
          * and stops his stream when he leaves the office.
          */
-        removeAllPeerConnections: (state) => {
+        removeAllPeerConnectionsForScreenSharing: (state) => {
             if (state.myScreenStream) {
                 const tracks = state.myScreenStream.getTracks();
                 tracks.forEach((track) => track.stop());
@@ -99,8 +102,8 @@ const screenReducer = createSlice({
 export const {
     setMyScreenStream,
     addScreenStream,
-    disconnectUser,
-    removeAllPeerConnections,
+    disconnectUserForScreenSharing,
+    removeAllPeerConnectionsForScreenSharing,
     stopScreenSharing,
     setPlayerNameMap,
     removePlayerNameMap,

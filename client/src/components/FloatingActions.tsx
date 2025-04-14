@@ -10,12 +10,18 @@ import {
     TooltipTrigger,
 } from "./ui/tooltip";
 import { AnimatePresence, motion } from "framer-motion";
+import phaserGame from "../game/main";
+import { GameScene } from "../game/scenes/GameScene";
+import { toast } from "sonner";
 
 const FloatingActions = ({
     setScreenDialogOpen,
 }: {
     setScreenDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
+    const myWebcamStream = useAppSelector(
+        (state) => state.webcam.myWebcamStream
+    );
     const isWebcamOn = useAppSelector((state) => state.webcam.isWebcamOn);
     const isMicOn = useAppSelector((state) => state.webcam.isMicOn);
 
@@ -51,28 +57,120 @@ const FloatingActions = ({
                     </TooltipContent>
                 </Tooltip>
 
-                {/* Webcam */}
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            variant="outline"
-                            className="cursor-pointer transition-all ease-in-out"
-                            onClick={() => {
-                                store.dispatch(toggleWebcam());
-                            }}
-                        >
-                            <AnimatePresence mode="wait" initial={false}>
-                                {isWebcamOn ? (
-                                    <motion.div
-                                        key="webcam"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.2 }}
+                {myWebcamStream ? (
+                    // Player has given access to his webcam
+                    <>
+                        {/* Webcam */}
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className="cursor-pointer transition-all ease-in-out"
+                                    onClick={() => {
+                                        store.dispatch(toggleWebcam());
+                                    }}
+                                >
+                                    <AnimatePresence
+                                        mode="wait"
+                                        initial={false}
                                     >
-                                        <Camera />
-                                    </motion.div>
-                                ) : (
+                                        {isWebcamOn ? (
+                                            <motion.div
+                                                key="webcam"
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                transition={{ duration: 0.2 }}
+                                            >
+                                                <Camera />
+                                            </motion.div>
+                                        ) : (
+                                            <motion.div
+                                                key="mic-off"
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                transition={{ duration: 0.2 }}
+                                            >
+                                                <CameraOff />
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p className="text-black">
+                                    {isWebcamOn
+                                        ? "Turn off camera"
+                                        : "Turn on camera"}
+                                </p>
+                            </TooltipContent>
+                        </Tooltip>
+
+                        {/* Mic */}
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className="cursor-pointer transition-all ease-in-out"
+                                    onClick={() => {
+                                        store.dispatch(toggleMic());
+                                    }}
+                                >
+                                    <AnimatePresence
+                                        mode="wait"
+                                        initial={false}
+                                    >
+                                        {isMicOn ? (
+                                            <motion.div
+                                                key="mic"
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                transition={{ duration: 0.2 }}
+                                            >
+                                                <Mic />
+                                            </motion.div>
+                                        ) : (
+                                            <motion.div
+                                                key="mic-off"
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                transition={{ duration: 0.2 }}
+                                            >
+                                                <MicOff />
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p className="text-black">
+                                    {isMicOn ? "Turn off mic" : "Turn on mic"}
+                                </p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </>
+                ) : (
+                    // Player has not given access to his webcam
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="outline"
+                                className="cursor-pointer transition-all ease-in-out"
+                                onClick={async () => {
+                                    const gameInstance = phaserGame.scene.keys
+                                        .GameScene as GameScene;
+                                    await gameInstance.network.startWebcam();
+                                    toast(
+                                        <div className="font-semibold">
+                                            Started Webcam
+                                        </div>
+                                    );
+                                }}
+                            >
+                                <AnimatePresence mode="wait" initial={false}>
                                     <motion.div
                                         key="mic-off"
                                         initial={{ opacity: 0 }}
@@ -82,58 +180,18 @@ const FloatingActions = ({
                                     >
                                         <CameraOff />
                                     </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p className="text-black">
-                            {isWebcamOn ? "Turn off camera" : "Turn on camera"}
-                        </p>
-                    </TooltipContent>
-                </Tooltip>
-
-                {/* Mic */}
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            variant="outline"
-                            className="cursor-pointer transition-all ease-in-out"
-                            onClick={() => {
-                                store.dispatch(toggleMic());
-                            }}
-                        >
-                            <AnimatePresence mode="wait" initial={false}>
-                                {isMicOn ? (
-                                    <motion.div
-                                        key="mic"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.2 }}
-                                    >
-                                        <Mic />
-                                    </motion.div>
-                                ) : (
-                                    <motion.div
-                                        key="mic-off"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.2 }}
-                                    >
-                                        <MicOff />
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p className="text-black">
-                            {isMicOn ? "Turn off mic" : "Turn on mic"}
-                        </p>
-                    </TooltipContent>
-                </Tooltip>
+                                </AnimatePresence>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p className="text-black">
+                                {isWebcamOn
+                                    ? "Turn off camera"
+                                    : "Turn on camera"}
+                            </p>
+                        </TooltipContent>
+                    </Tooltip>
+                )}
             </TooltipProvider>
         </motion.div>
     );

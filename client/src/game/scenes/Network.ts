@@ -1,6 +1,6 @@
 import { Client, Room } from "colyseus.js";
 import { BACKEND_URL } from "../backend";
-import { sanitizeUserId } from "../../lib/utils";
+import { sanitizeUserIdForScreenSharing } from "../../lib/utils";
 import store from "../../app/store";
 import videoCalling from "../service/VideoCalling";
 import screenSharing from "../service/ScreenSharing";
@@ -18,11 +18,15 @@ import {
 } from "../../app/features/chat/chatSlice";
 import {
     clearPlayerNameMap,
-    disconnectUser,
-    removeAllPeerConnections,
+    disconnectUserForScreenSharing,
+    removeAllPeerConnectionsForScreenSharing,
     removePlayerNameMap,
     setPlayerNameMap,
 } from "../../app/features/webRtc/screenSlice";
+import {
+    disconnectUserForVideoCalling,
+    removeAllPeerConnectionsForVideoCalling,
+} from "../../app/features/webRtc/webcamSlice";
 
 type officeNames =
     | "mainOffice"
@@ -169,18 +173,39 @@ export default class Network {
     };
 
     /**
-     * Starts streaming player's screen.
+     * Starts current player's webcam.
      *
-     * Gets the player's display media and calls all the members of the current office.
+     * Gets the current player's webcam media and calls all the members of the current office.
      */
-    startScreenSharing = async () => {
-        await screenSharing.getUserDisplayMedia();
+    startWebcam = async () => {
+        await videoCalling.getUserMedia();
 
         const { members } = this.getOfficeData(this.currentSpace);
         members.forEach((username, sessionId) => {
             // preventing calling ourself
             if (sessionId === this.room.sessionId) return;
 
+            // when current player starts sharing his screen
+            // call all the present users of the office and their them current player's stream.
+            videoCalling.shareWebcam(sessionId);
+        });
+    };
+
+    /**
+     * Starts streaming current player's screen.
+     *
+     * Gets the current player's display media and calls all the members of the current office.
+     */
+    startScreenSharing = async () => {
+        await screenSharing.getUserMedia();
+
+        const { members } = this.getOfficeData(this.currentSpace);
+        members.forEach((username, sessionId) => {
+            // preventing calling ourself
+            if (sessionId === this.room.sessionId) return;
+
+            // when current player starts sharing his screen
+            // call all the present users of the office and their them current player's stream.
             screenSharing.shareScreen(sessionId);
         });
     };
@@ -244,14 +269,17 @@ export default class Network {
                 break;
         }
 
-        // get user media
-        videoCalling.getUserMedia();
+        // if player has previously given webcam access then upon joining the office,
+        // call other present players of the office and share current player's webcam with them.
+        if (store.getState().webcam.myWebcamStream) {
+            this.startWebcam();
+        }
 
         // connect to the office
         store.dispatch(setShowOfficeChat(true));
-        const peer = videoCalling.getPeer();
+        // const peer = videoCalling.getPeer();
         this.room.send(`JOIN_${roomName}_OFFICE`, {
-            peerId: peer.id,
+            peerId: undefined,
             username: this.username,
         });
 
@@ -264,11 +292,11 @@ export default class Network {
                 "username: ",
                 username,
                 "sessionid: ",
-                sanitizeUserId(sessionId)
+                sanitizeUserIdForScreenSharing(sessionId)
             );
             store.dispatch(
                 setPlayerNameMap({
-                    peerId: sanitizeUserId(sessionId),
+                    peerId: sanitizeUserIdForScreenSharing(sessionId),
                     username: username,
                 })
             );
@@ -461,33 +489,39 @@ export default class Network {
         this.room.onMessage(
             "CONNECT_TO_WEBRTC",
             async ({ peerId, username }) => {
-                try {
-                    setTimeout(async () => {
-                        // Ensure PeerJS is initialized
-                        await videoCalling.initializePeer(this.room.sessionId);
+                // try {
+                //     setTimeout(async () => {
+                //         // Ensure PeerJS is initialized
+                //         await videoCalling.initializePeer(this.room.sessionId);
 
-                        // Call the new user
-                        await videoCalling.connectToNewUser(peerId);
-                    }, 3000);
-                } catch (err) {
-                    console.error("Failed to connect to new user:", err);
-                }
+                //         // Call the new user
+                //         await videoCalling.connectToNewUser(peerId);
+                //     }, 3000);
+                // } catch (err) {
+                //     console.error("Failed to connect to new user:", err);
+                // }
 
                 store.dispatch(
                     setPlayerNameMap({
-                        peerId: sanitizeUserId(peerId),
+                        peerId: sanitizeUserIdForScreenSharing(peerId),
                         username,
                     })
                 );
 
+                // when new player joins office,
+                // then call that new player and share current player's screen with him.
                 screenSharing.shareScreen(peerId);
+                videoCalling.shareWebcam(peerId);
             }
         );
 
         this.room.onMessage("DISCONNECT_FROM_WEBRTC", (userId) => {
-            videoCalling.disconnectUser(userId);
-            store.dispatch(disconnectUser(userId));
-            store.dispatch(removePlayerNameMap(sanitizeUserId(userId)));
+            // videoCalling.disconnectUser(userId);
+            store.dispatch(disconnectUserForVideoCalling(userId));
+            store.dispatch(disconnectUserForScreenSharing(userId));
+            store.dispatch(
+                removePlayerNameMap(sanitizeUserIdForScreenSharing(userId))
+            );
         });
 
         this.room.onMessage("NEW_GLOBAL_CHAT_MESSAGE", (serverData) => {
@@ -513,7 +547,7 @@ export default class Network {
         });
 
         this.room.onMessage("USER_STOPPED_SCREEN_SHARING", (userId) => {
-            store.dispatch(disconnectUser(userId));
+            store.dispatch(disconnectUserForScreenSharing(userId));
         });
 
         this.room.state.players.onRemove((player, sessionId) => {
@@ -710,8 +744,8 @@ export default class Network {
             this.room.send(room, this.username);
             store.dispatch(clearOfficeChat()); // player left the office so clear the redux state as well
             store.dispatch(setShowOfficeChat(false));
-            videoCalling.removeAllPeerConnections();
-            store.dispatch(removeAllPeerConnections());
+            store.dispatch(removeAllPeerConnectionsForVideoCalling());
+            store.dispatch(removeAllPeerConnectionsForScreenSharing());
             store.dispatch(clearPlayerNameMap());
             this.currentSpace = null;
             this.prevSpace = null;
