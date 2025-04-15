@@ -169,7 +169,7 @@ const ScreenShare = ({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-            <Toaster position="bottom-center" closeButton />
+            <Toaster position="bottom-left" closeButton />
         </>
     );
 };
