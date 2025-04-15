@@ -13,4 +13,4 @@ It is built using:
 
 [PeerJS](https://peerjs.com/): Manages peer-to-peer video calls, audio chat and screen sharing
 
-[ShadCN](https://ui.shadcn.com/) / [TailwindCSS](https://tailwindcss.com/) / [Motion](https://motion.dev/docs) (prev Framer Motion): Used for clean, modern styling and smooth UI animations
+[ShadCN](https://ui.shadcn.com/) / [TailwindCSS](https://tailwindcss.com/) / [Motion](https://motion.dev/docs) (prev Framer Motion): Used for clean, modern styling and smooth UI animations.
