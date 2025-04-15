@@ -27,7 +27,7 @@ export class MyRoom extends Room<MyRoomState> {
         console.log("----------------------------");
     }
 
-    // Helper method to get the appropriate state properties for each office
+    /** Helper method to get the appropriate state properties for each office */
     private getOfficeData(officeType: OfficeType) {
         const officeMap = {
             MAIN: {
@@ -60,6 +60,23 @@ export class MyRoom extends Room<MyRoomState> {
         return officeMap[officeType];
     }
 
+    /** Helper method to get user's office type, used when user leaves the game */
+    private getUserOfficeType(sessionId: string): OfficeType {
+        if (this.state.mainOfficeMembers.has(sessionId)) {
+            return "MAIN";
+        } else if (this.state.eastOfficeMembers.has(sessionId)) {
+            return "EAST";
+        } else if (this.state.westOfficeMembers.has(sessionId)) {
+            return "WEST";
+        } else if (this.state.northOffice1Members.has(sessionId)) {
+            return "NORTH_1";
+        } else if (this.state.northOffice2Members.has(sessionId)) {
+            return "NORTH_2";
+        }
+
+        return null;
+    }
+
     private handleOfficeJoin(
         client: Client,
         username: string,
@@ -80,16 +97,13 @@ export class MyRoom extends Room<MyRoomState> {
         chat.push(newMessage);
 
         // Notify other users in the same office
-        this.clients.forEach((member) => {
-            if (
-                members.has(member.sessionId) &&
-                member.sessionId !== client.sessionId
-            ) {
-                member.send("CONNECT_TO_WEBRTC", {
-                    playerSessionId: client.sessionId,
-                    username,
-                });
-            }
+        members.forEach((username, userId) => {
+            if (userId === client.sessionId) return;
+
+            this.clients.getById(userId).send("CONNECT_TO_WEBRTC", {
+                playerSessionId: client.sessionId,
+                username,
+            });
         });
 
         const allMembers: any = [];
@@ -119,10 +133,11 @@ export class MyRoom extends Room<MyRoomState> {
 
             members.delete(sessionId);
 
-            this.clients.forEach((member) => {
-                if (members.has(member.sessionId)) {
-                    member.send("DISCONNECT_FROM_WEBRTC", client.sessionId);
-                }
+            // Notify other users in the same office
+            members.forEach((username, userId) => {
+                this.clients
+                    .getById(userId)
+                    .send("DISCONNECT_FROM_WEBRTC", client.sessionId);
             });
         }
     }
@@ -309,7 +324,7 @@ export class MyRoom extends Room<MyRoomState> {
 
         const newMessage = new OfficeChat();
         newMessage.type = "PLAYER_JOINED";
-        newMessage.message = `Just joined!`;
+        newMessage.message = `Just joined the lobby!`;
         newMessage.username = options.username;
         this.state.globalChat.push(newMessage);
 
@@ -329,11 +344,17 @@ export class MyRoom extends Room<MyRoomState> {
         const username = this.state.players.get(client.sessionId).username;
         newMessage.type = "PLAYER_LEFT";
         newMessage.username = username;
-        newMessage.message = `Left!`;
+        newMessage.message = `Left the lobby!`;
 
         this.state.players.delete(client.sessionId);
         this.state.globalChat.push(newMessage);
         this.broadcast("NEW_GLOBAL_CHAT_MESSAGE", newMessage);
+
+        const officeType = this.getUserOfficeType(client.sessionId);
+
+        if (officeType) {
+            this.handleLeftOffice(client, username, officeType);
+        }
     }
 
     onDispose() {

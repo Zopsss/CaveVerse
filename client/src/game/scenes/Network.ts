@@ -529,7 +529,6 @@ export default class Network {
         );
 
         this.room.onMessage("DISCONNECT_FROM_WEBRTC", (playerSessionId) => {
-            // videoCalling.disconnectUser(userId);
             store.dispatch(disconnectUserForVideoCalling(playerSessionId));
             store.dispatch(disconnectUserForScreenSharing(playerSessionId));
             store.dispatch(
