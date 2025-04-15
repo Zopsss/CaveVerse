@@ -24,6 +24,7 @@ import {
     setPlayerNameMap,
 } from "../../app/features/webRtc/screenSlice";
 import {
+    disconnectFromVideoCall,
     disconnectUserForVideoCalling,
     removeAllPeerConnectionsForVideoCalling,
 } from "../../app/features/webRtc/webcamSlice";
@@ -177,7 +178,7 @@ export default class Network {
      *
      * Gets the current player's webcam media and calls all the members of the current office.
      */
-    startWebcam = async () => {
+    startWebcam = async (shouldConnectToOtherPlayers = false) => {
         await videoCalling.getUserMedia();
 
         const { members } = this.getOfficeData(this.currentSpace);
@@ -189,6 +190,13 @@ export default class Network {
             // call all the present users of the office and their them current player's stream.
             videoCalling.shareWebcam(sessionId);
         });
+
+        // when player uses "Disconnect from video call button" and then turns on his camera again,
+        // then we need to let other players know that the current player has started his webcam again.
+        if (shouldConnectToOtherPlayers) {
+            const currentOffice = this.getCurrentOffice();
+            this.room.send("CONNECT_TO_VIDEO_CALL", currentOffice);
+        }
     };
 
     /**
@@ -269,6 +277,8 @@ export default class Network {
                 break;
         }
 
+        store.dispatch(setShowOfficeChat(true));
+
         // if player has previously given webcam access then upon joining the office,
         // call other present players of the office and share current player's webcam with them.
         if (store.getState().webcam.myWebcamStream) {
@@ -276,12 +286,7 @@ export default class Network {
         }
 
         // connect to the office
-        store.dispatch(setShowOfficeChat(true));
-        // const peer = videoCalling.getPeer();
-        this.room.send(`JOIN_${roomName}_OFFICE`, {
-            peerId: undefined,
-            username: this.username,
-        });
+        this.room.send(`JOIN_${roomName}_OFFICE`, this.username);
 
         // TODO: Instead of adding & removing data in playerNameMap
         // as player joins or leaves a room,
@@ -301,6 +306,29 @@ export default class Network {
                 })
             );
         });
+    };
+
+    private getCurrentOffice = () => {
+        let currentOffice: string;
+        switch (this.currentSpace) {
+            case "mainOffice":
+                currentOffice = "MAIN";
+                break;
+            case "eastOffice":
+                currentOffice = "EAST";
+                break;
+            case "westOffice":
+                currentOffice = "WEST";
+                break;
+            case "northOffice1":
+                currentOffice = "NORTH_1";
+                break;
+            case "northOffice2":
+                currentOffice = "NORTH_2";
+                break;
+        }
+
+        return currentOffice;
     };
 
     /**
@@ -351,26 +379,23 @@ export default class Network {
     playerStoppedScreenSharing = () => {
         // TODO: Add a common folder between server & client where all types can be declared.
         // because currentOffice can be set to invalid string which server cannot handle.
-        let currentOffice: string;
-        switch (this.currentSpace) {
-            case "mainOffice":
-                currentOffice = "MAIN";
-                break;
-            case "eastOffice":
-                currentOffice = "EAST";
-                break;
-            case "westOffice":
-                currentOffice = "WEST";
-                break;
-            case "northOffice1":
-                currentOffice = "NORTH_1";
-                break;
-            case "northOffice2":
-                currentOffice = "NORTH_2";
-                break;
-        }
-
+        const currentOffice = this.getCurrentOffice();
         this.room.send("USER_STOPPED_SCREEN_SHARING", currentOffice);
+    };
+
+    /**
+     * Stops webcam.
+     *
+     * Letting other players know that the current player
+     * stopped his webcam.
+     */
+    playerStoppedWebcam = () => {
+        // TODO: Add a common folder between server & client where all types can be declared.
+        // because currentOffice can be set to invalid string which server cannot handle.
+        const currentOffice = this.getCurrentOffice();
+
+        store.dispatch(disconnectFromVideoCall());
+        this.room.send("USER_STOPPED_WEBCAM", currentOffice);
     };
 
     /**
@@ -488,40 +513,34 @@ export default class Network {
         // TODO: Fix "Cannot call peer - No local stream available"
         this.room.onMessage(
             "CONNECT_TO_WEBRTC",
-            async ({ peerId, username }) => {
-                // try {
-                //     setTimeout(async () => {
-                //         // Ensure PeerJS is initialized
-                //         await videoCalling.initializePeer(this.room.sessionId);
-
-                //         // Call the new user
-                //         await videoCalling.connectToNewUser(peerId);
-                //     }, 3000);
-                // } catch (err) {
-                //     console.error("Failed to connect to new user:", err);
-                // }
-
+            async ({ playerSessionId, username }) => {
                 store.dispatch(
                     setPlayerNameMap({
-                        peerId: sanitizeUserIdForScreenSharing(peerId),
+                        peerId: sanitizeUserIdForScreenSharing(playerSessionId),
                         username,
                     })
                 );
 
                 // when new player joins office,
-                // then call that new player and share current player's screen with him.
-                screenSharing.shareScreen(peerId);
-                videoCalling.shareWebcam(peerId);
+                // then call that new player and share current player's screen & webcam with him
+                screenSharing.shareScreen(playerSessionId);
+                videoCalling.shareWebcam(playerSessionId);
             }
         );
 
-        this.room.onMessage("DISCONNECT_FROM_WEBRTC", (userId) => {
+        this.room.onMessage("DISCONNECT_FROM_WEBRTC", (playerSessionId) => {
             // videoCalling.disconnectUser(userId);
-            store.dispatch(disconnectUserForVideoCalling(userId));
-            store.dispatch(disconnectUserForScreenSharing(userId));
+            store.dispatch(disconnectUserForVideoCalling(playerSessionId));
+            store.dispatch(disconnectUserForScreenSharing(playerSessionId));
             store.dispatch(
-                removePlayerNameMap(sanitizeUserIdForScreenSharing(userId))
+                removePlayerNameMap(
+                    sanitizeUserIdForScreenSharing(playerSessionId)
+                )
             );
+        });
+
+        this.room.onMessage("CONNECT_TO_VIDEO_CALL", (playerSessionId) => {
+            videoCalling.shareWebcam(playerSessionId);
         });
 
         this.room.onMessage("NEW_GLOBAL_CHAT_MESSAGE", (serverData) => {
@@ -548,6 +567,10 @@ export default class Network {
 
         this.room.onMessage("USER_STOPPED_SCREEN_SHARING", (userId) => {
             store.dispatch(disconnectUserForScreenSharing(userId));
+        });
+
+        this.room.onMessage("USER_STOPPED_WEBCAM", (userId) => {
+            store.dispatch(disconnectUserForVideoCalling(userId));
         });
 
         this.room.state.players.onRemove((player, sessionId) => {

@@ -62,7 +62,6 @@ export class MyRoom extends Room<MyRoomState> {
 
     private handleOfficeJoin(
         client: Client,
-        peerId: string,
         username: string,
         officeType: OfficeType
     ) {
@@ -87,13 +86,11 @@ export class MyRoom extends Room<MyRoomState> {
                 member.sessionId !== client.sessionId
             ) {
                 member.send("CONNECT_TO_WEBRTC", {
-                    peerId: client.sessionId,
+                    playerSessionId: client.sessionId,
                     username,
                 });
             }
         });
-
-        console.log("peerId: ", peerId);
 
         const allMembers: any = [];
         members.forEach((value, key) => {
@@ -167,8 +164,8 @@ export class MyRoom extends Room<MyRoomState> {
             player.anim = input.anim;
         });
 
-        this.onMessage("JOIN_MAIN_OFFICE", (client, { peerId, username }) => {
-            this.handleOfficeJoin(client, peerId, username, "MAIN");
+        this.onMessage("JOIN_MAIN_OFFICE", (client, username) => {
+            this.handleOfficeJoin(client, username, "MAIN");
         });
 
         this.onMessage("LEFT_MAIN_OFFICE", (client, username) => {
@@ -182,8 +179,8 @@ export class MyRoom extends Room<MyRoomState> {
             }
         );
 
-        this.onMessage("JOIN_EAST_OFFICE", (client, { peerId, username }) => {
-            this.handleOfficeJoin(client, peerId, username, "EAST");
+        this.onMessage("JOIN_EAST_OFFICE", (client, username) => {
+            this.handleOfficeJoin(client, username, "EAST");
         });
 
         this.onMessage("LEFT_EAST_OFFICE", (client, username) => {
@@ -197,12 +194,9 @@ export class MyRoom extends Room<MyRoomState> {
             }
         );
 
-        this.onMessage(
-            "JOIN_NORTH_1_OFFICE",
-            (client, { peerId, username }) => {
-                this.handleOfficeJoin(client, peerId, username, "NORTH_1");
-            }
-        );
+        this.onMessage("JOIN_NORTH_1_OFFICE", (client, username) => {
+            this.handleOfficeJoin(client, username, "NORTH_1");
+        });
 
         this.onMessage("LEFT_NORTH_1_OFFICE", (client, username) => {
             this.handleLeftOffice(client, username, "NORTH_1");
@@ -215,12 +209,9 @@ export class MyRoom extends Room<MyRoomState> {
             }
         );
 
-        this.onMessage(
-            "JOIN_NORTH_2_OFFICE",
-            (client, { peerId, username }) => {
-                this.handleOfficeJoin(client, peerId, username, "NORTH_2");
-            }
-        );
+        this.onMessage("JOIN_NORTH_2_OFFICE", (client, username) => {
+            this.handleOfficeJoin(client, username, "NORTH_2");
+        });
 
         this.onMessage("LEFT_NORTH_2_OFFICE", (client, username) => {
             this.handleLeftOffice(client, username, "NORTH_2");
@@ -233,8 +224,8 @@ export class MyRoom extends Room<MyRoomState> {
             }
         );
 
-        this.onMessage("JOIN_WEST_OFFICE", (client, { peerId, username }) => {
-            this.handleOfficeJoin(client, peerId, username, "WEST");
+        this.onMessage("JOIN_WEST_OFFICE", (client, username) => {
+            this.handleOfficeJoin(client, username, "WEST");
         });
 
         this.onMessage("LEFT_WEST_OFFICE", (client, username) => {
@@ -266,10 +257,38 @@ export class MyRoom extends Room<MyRoomState> {
             (client, office: OfficeType) => {
                 const { members } = this.getOfficeData(office);
                 members.forEach((username, userId) => {
+                    // preventing sending message to ourself
                     if (userId === client.sessionId) return;
+
                     this.clients
                         .getById(userId)
                         .send("USER_STOPPED_SCREEN_SHARING", client.sessionId);
+                });
+            }
+        );
+
+        this.onMessage("USER_STOPPED_WEBCAM", (client, office: OfficeType) => {
+            const { members } = this.getOfficeData(office);
+            members.forEach((username, userId) => {
+                // preventing sending message to ourself
+                if (userId === client.sessionId) return;
+
+                this.clients
+                    .getById(userId)
+                    .send("USER_STOPPED_WEBCAM", client.sessionId);
+            });
+        });
+
+        this.onMessage(
+            "CONNECT_TO_VIDEO_CALL",
+            (client, office: OfficeType) => {
+                const { members } = this.getOfficeData(office);
+                members.forEach((username, userId) => {
+                    if (userId === client.sessionId) return;
+
+                    this.clients
+                        .getById(userId)
+                        .send("CONNECT_TO_VIDEO_CALL", client.sessionId);
                 });
             }
         );

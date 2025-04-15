@@ -1,7 +1,14 @@
 import store from "../app/store";
 import { useAppSelector } from "../app/hooks";
 import { Button } from "./ui/button";
-import { Camera, CameraOff, Mic, MicOff, ScreenShare } from "lucide-react";
+import {
+    Camera,
+    CameraOff,
+    Mic,
+    MicOff,
+    PhoneOff,
+    ScreenShare,
+} from "lucide-react";
 import { toggleMic, toggleWebcam } from "../app/features/webRtc/webcamSlice";
 import {
     Tooltip,
@@ -13,12 +20,15 @@ import { AnimatePresence, motion } from "framer-motion";
 import phaserGame from "../game/main";
 import { GameScene } from "../game/scenes/GameScene";
 import { toast } from "sonner";
+import { useState } from "react";
 
 const FloatingActions = ({
     setScreenDialogOpen,
 }: {
     setScreenDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
+    const [shouldConnectToOtherPlayers, setShouldConnectToOtherPlayers] =
+        useState(false);
     const myWebcamStream = useAppSelector(
         (state) => state.webcam.myWebcamStream
     );
@@ -151,6 +161,47 @@ const FloatingActions = ({
                                 </p>
                             </TooltipContent>
                         </Tooltip>
+
+                        {/* Disconnect */}
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="destructive"
+                                    className="cursor-pointer transition-all ease-in-out"
+                                    onClick={() => {
+                                        const gameInstance = phaserGame.scene
+                                            .keys.GameScene as GameScene;
+                                        gameInstance.network.playerStoppedWebcam();
+                                        setShouldConnectToOtherPlayers(true);
+                                        toast(
+                                            <div className="font-semibold">
+                                                Disconnected from video calls
+                                            </div>
+                                        );
+                                    }}
+                                >
+                                    <AnimatePresence
+                                        mode="wait"
+                                        initial={false}
+                                    >
+                                        <motion.div
+                                            key="mic-off"
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.2 }}
+                                        >
+                                            <PhoneOff />
+                                        </motion.div>
+                                    </AnimatePresence>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p className="text-black">
+                                    Disconnect From Video Calls
+                                </p>
+                            </TooltipContent>
+                        </Tooltip>
                     </>
                 ) : (
                     // Player has not given access to his webcam
@@ -162,10 +213,12 @@ const FloatingActions = ({
                                 onClick={async () => {
                                     const gameInstance = phaserGame.scene.keys
                                         .GameScene as GameScene;
-                                    await gameInstance.network.startWebcam();
+                                    await gameInstance.network.startWebcam(
+                                        shouldConnectToOtherPlayers
+                                    );
                                     toast(
                                         <div className="font-semibold">
-                                            Started Webcam
+                                            Camera Started
                                         </div>
                                     );
                                 }}
@@ -184,11 +237,7 @@ const FloatingActions = ({
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p className="text-black">
-                                {isWebcamOn
-                                    ? "Turn off camera"
-                                    : "Turn on camera"}
-                            </p>
+                            <p className="text-black">Turn on camera</p>
                         </TooltipContent>
                     </Tooltip>
                 )}
