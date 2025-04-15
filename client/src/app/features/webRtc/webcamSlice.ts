@@ -67,13 +67,32 @@ const webcamSlice = createSlice({
             state.peerStreams.delete(sanitizedId);
         },
         /**
-         * disconnect all the connected peers with current player
-         * and stops his stream when he leaves the office.
+         * Disconnect all the connected peers with current player.
+         *
+         * Used when player leaves an office.
          */
         removeAllPeerConnectionsForVideoCalling: (state) => {
             if (state.myWebcamStream) {
                 state.myWebcamStream.getVideoTracks()[0].enabled = false;
                 state.myWebcamStream.getAudioTracks()[0].enabled = false;
+                state.isWebcamOn = false;
+                state.isMicOn = false;
+            }
+
+            state.peerStreams.forEach((peer) => {
+                peer.call.close();
+            });
+
+            state.peerStreams.clear();
+        },
+        /**
+         * disconnect all the connected peers with current player.
+         *
+         * Used when player clicks on "Disconnect from video calls" button.
+         */
+        disconnectFromVideoCall: (state) => {
+            if (state.myWebcamStream) {
+                state.myWebcamStream = null;
                 state.isWebcamOn = false;
                 state.isMicOn = false;
             }
@@ -95,6 +114,7 @@ export const {
     addWebcamStream,
     disconnectUserForVideoCalling,
     removeAllPeerConnectionsForVideoCalling,
+    disconnectFromVideoCall,
 } = webcamSlice.actions;
 
 export default webcamSlice.reducer;
