@@ -4,13 +4,7 @@ import { Bootstrap } from "../../game/scenes/Bootstrap";
 import { Button } from "../ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import {
     Carousel,
     CarouselApi,
