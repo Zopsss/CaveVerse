@@ -5,11 +5,6 @@ export class GameScene extends Phaser.Scene {
     mapLayer: Phaser.Tilemaps.TilemapLayer;
     map!: Phaser.Tilemaps.Tilemap;
     network: Network;
-    currentPlayer: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
-    cursorKeys: Phaser.Types.Input.Keyboard.CursorKeys;
-    otherPlayers: {
-        [sessionId: string]: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
-    } = {};
 
     constructor() {
         super({ key: "GameScene" });
