@@ -129,7 +129,7 @@ export class GameScene extends Phaser.Scene {
             entity.setDepth(100);
 
             // Store the entity reference
-            this.network.playerEntities[sessionId] = entity;
+            this.network.otherPlayers[sessionId] = entity;
 
             // Is current player
             if (sessionId === this.network.room.sessionId) {
@@ -157,7 +157,6 @@ export class GameScene extends Phaser.Scene {
             }
         });
 
-        this.network.handleOfficeMessages();
         this.network.handleServerMessages();
     }
 
