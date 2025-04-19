@@ -194,7 +194,10 @@ const Chat = () => {
                         }}
                         ref={inputRef}
                     />
-                    <button className="absolute right-6" type="submit">
+                    <button
+                        className="absolute right-6 cursor-pointer"
+                        type="submit"
+                    >
                         <SentIcon />
                     </button>
                 </form>

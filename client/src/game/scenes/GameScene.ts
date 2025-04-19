@@ -157,7 +157,6 @@ export class GameScene extends Phaser.Scene {
             }
         });
 
-        this.network.handleOfficeMessages();
         this.network.handleServerMessages();
     }
 

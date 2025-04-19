@@ -1,7 +1,12 @@
 import { Room, Client } from "colyseus";
 import { MyRoomState, Player, OfficeChat } from "../rooms/schema/MyRoomState";
 
-type OfficeType = "MAIN" | "EAST" | "NORTH_1" | "NORTH_2" | "WEST";
+type officeNames =
+    | "mainOffice"
+    | "eastOffice"
+    | "westOffice"
+    | "northOffice1"
+    | "northOffice2";
 interface InputMessageType {
     username: string;
     message: string;
@@ -28,50 +33,50 @@ export class MyRoom extends Room<MyRoomState> {
     }
 
     /** Helper method to get the appropriate state properties for each office */
-    private getOfficeData(officeType: OfficeType) {
+    private getOfficeData(officeName: officeNames) {
         const officeMap = {
-            MAIN: {
+            mainOffice: {
                 members: this.state.mainOfficeMembers,
                 chat: this.state.mainOfficeChat,
                 name: "main office",
             },
-            EAST: {
+            eastOffice: {
                 members: this.state.eastOfficeMembers,
                 chat: this.state.eastOfficeChat,
                 name: "east office",
             },
-            NORTH_1: {
-                members: this.state.northOffice1Members,
-                chat: this.state.northOffice1Chat,
-                name: "north 1 office",
-            },
-            NORTH_2: {
-                members: this.state.northOffice2Members,
-                chat: this.state.northOffice2Chat,
-                name: "north 2 office",
-            },
-            WEST: {
+            westOffice: {
                 members: this.state.westOfficeMembers,
                 chat: this.state.westOfficeChat,
                 name: "west office",
             },
+            northOffice1: {
+                members: this.state.northOffice1Members,
+                chat: this.state.northOffice1Chat,
+                name: "north 1 office",
+            },
+            northOffice2: {
+                members: this.state.northOffice2Members,
+                chat: this.state.northOffice2Chat,
+                name: "north 2 office",
+            },
         };
 
-        return officeMap[officeType];
+        return officeMap[officeName];
     }
 
     /** Helper method to get user's office type, used when user leaves the game */
-    private getUserOfficeType(sessionId: string): OfficeType {
+    private getUserOfficeName(sessionId: string): officeNames {
         if (this.state.mainOfficeMembers.has(sessionId)) {
-            return "MAIN";
+            return "mainOffice";
         } else if (this.state.eastOfficeMembers.has(sessionId)) {
-            return "EAST";
+            return "eastOffice";
         } else if (this.state.westOfficeMembers.has(sessionId)) {
-            return "WEST";
+            return "westOffice";
         } else if (this.state.northOffice1Members.has(sessionId)) {
-            return "NORTH_1";
+            return "northOffice1";
         } else if (this.state.northOffice2Members.has(sessionId)) {
-            return "NORTH_2";
+            return "northOffice2";
         }
 
         return null;
@@ -80,15 +85,17 @@ export class MyRoom extends Room<MyRoomState> {
     private handleOfficeJoin(
         client: Client,
         username: string,
-        officeType: OfficeType
+        officeName: officeNames
     ) {
         const sessionId = client.sessionId;
-        const { chat, members, name } = this.getOfficeData(officeType);
+        const { chat, members, name } = this.getOfficeData(officeName);
 
+        const message = `Just joined ${name} lobby`;
+        const messageType = "PLAYER_JOINED";
         const newMessage = new OfficeChat();
         newMessage.username = username;
-        newMessage.message = `Just joined ${name} lobby`;
-        newMessage.type = "PLAYER_JOINED";
+        newMessage.message = message;
+        newMessage.type = messageType;
 
         // Add user to the appropriate office members collection
         members.set(sessionId, username);
@@ -96,13 +103,17 @@ export class MyRoom extends Room<MyRoomState> {
         // Add message to the appropriate chat collection
         chat.push(newMessage);
 
-        // Notify other users in the same office
+        client.send("GET_OFFICE_CHAT", chat);
+
+        // Notify other players when current player enters office.
         members.forEach((username, userId) => {
             if (userId === client.sessionId) return;
 
-            this.clients.getById(userId).send("CONNECT_TO_WEBRTC", {
+            this.clients.getById(userId).send("USER_JOINED_OFFICE", {
                 playerSessionId: client.sessionId,
                 username,
+                message,
+                type: messageType,
             });
         });
 
@@ -113,43 +124,38 @@ export class MyRoom extends Room<MyRoomState> {
         console.log("chat members: ", allMembers);
     }
 
-    private handleLeftOffice(
+    private handleOfficeLeave(
         client: Client,
         username: string,
-        officeType: OfficeType
+        officeName: officeNames
     ) {
         const sessionId = client.sessionId;
-        const { name, chat, members } = this.getOfficeData(officeType);
+        const { name, chat, members } = this.getOfficeData(officeName);
         // if condition is required when user haven't given his webcam permission yet, otherwise servers gives this error:
         // @colyseus/schema MapSchema: trying to delete non-existing index: vd04glYYb (undefined)
         // TODO: don't know why this is happening, need to investigate it!!!!
         if (members.has(sessionId)) {
+            const message = `Left ${name} lobby`;
+            const messageType = "PLAYER_LEFT";
             const newMessage = new OfficeChat();
             newMessage.username = username;
-            newMessage.message = `Left ${name} lobby`;
-            newMessage.type = "PLAYER_LEFT";
+            newMessage.message = message;
+            newMessage.type = messageType;
 
             chat.push(newMessage);
 
             members.delete(sessionId);
 
-            // Notify other users in the same office
+            // Notify other players when current player leaves office.
             members.forEach((username, userId) => {
-                this.clients
-                    .getById(userId)
-                    .send("DISCONNECT_FROM_WEBRTC", client.sessionId);
+                this.clients.getById(userId).send("PLAYER_LEFT_OFFICE", {
+                    playerSessionId: client.sessionId,
+                    username,
+                    message,
+                    type: messageType,
+                });
             });
         }
-    }
-
-    private handleAddMessage(officeType: OfficeType, input: InputMessageType) {
-        const { chat } = this.getOfficeData(officeType);
-        const newMessage = new OfficeChat();
-        newMessage.username = input.username;
-        newMessage.message = input.message;
-        newMessage.type = "REGULAR_MESSAGE";
-
-        chat.push(newMessage);
     }
 
     onAuth(
@@ -179,87 +185,39 @@ export class MyRoom extends Room<MyRoomState> {
             player.anim = input.anim;
         });
 
-        this.onMessage("JOIN_MAIN_OFFICE", (client, username) => {
-            this.handleOfficeJoin(client, username, "MAIN");
+        this.onMessage("JOIN_OFFICE", (client, { username, office }) => {
+            this.handleOfficeJoin(client, username, office);
         });
 
-        this.onMessage("LEFT_MAIN_OFFICE", (client, username) => {
-            this.handleLeftOffice(client, username, "MAIN");
-        });
-
-        this.onMessage(
-            "ADD_MAIN_OFFICE_MESSAGE",
-            (client, input: InputMessageType) => {
-                this.handleAddMessage("MAIN", input);
-            }
-        );
-
-        this.onMessage("JOIN_EAST_OFFICE", (client, username) => {
-            this.handleOfficeJoin(client, username, "EAST");
-        });
-
-        this.onMessage("LEFT_EAST_OFFICE", (client, username) => {
-            this.handleLeftOffice(client, username, "EAST");
+        this.onMessage("LEAVE_OFFICE", (client, { username, office }) => {
+            this.handleOfficeLeave(client, username, office);
         });
 
         this.onMessage(
-            "ADD_EAST_OFFICE_MESSAGE",
-            (client, input: InputMessageType) => {
-                this.handleAddMessage("EAST", input);
-            }
-        );
-
-        this.onMessage("JOIN_NORTH_1_OFFICE", (client, username) => {
-            this.handleOfficeJoin(client, username, "NORTH_1");
-        });
-
-        this.onMessage("LEFT_NORTH_1_OFFICE", (client, username) => {
-            this.handleLeftOffice(client, username, "NORTH_1");
-        });
-
-        this.onMessage(
-            "ADD_NORTH_OFFICE_1_MESSAGE",
-            (client, input: InputMessageType) => {
-                this.handleAddMessage("NORTH_1", input);
-            }
-        );
-
-        this.onMessage("JOIN_NORTH_2_OFFICE", (client, username) => {
-            this.handleOfficeJoin(client, username, "NORTH_2");
-        });
-
-        this.onMessage("LEFT_NORTH_2_OFFICE", (client, username) => {
-            this.handleLeftOffice(client, username, "NORTH_2");
-        });
-
-        this.onMessage(
-            "ADD_NORTH_OFFICE_2_MESSAGE",
-            (client, input: InputMessageType) => {
-                this.handleAddMessage("NORTH_2", input);
-            }
-        );
-
-        this.onMessage("JOIN_WEST_OFFICE", (client, username) => {
-            this.handleOfficeJoin(client, username, "WEST");
-        });
-
-        this.onMessage("LEFT_WEST_OFFICE", (client, username) => {
-            this.handleLeftOffice(client, username, "WEST");
-        });
-
-        this.onMessage(
-            "ADD_WEST_OFFICE_MESSAGE",
-            (client, input: InputMessageType) => {
-                this.handleAddMessage("WEST", input);
-            }
-        );
-
-        this.onMessage(
-            "ADD_NEW_GLOBAL_CHAT_MESSAGE",
-            (client, input: InputMessageType) => {
+            "PUSH_OFFICE_MESSAGE",
+            (client, { username, message, officeName }) => {
+                const { members, chat } = this.getOfficeData(officeName);
                 const newMessage = new OfficeChat();
-                newMessage.username = input.username;
-                newMessage.message = input.message;
+                newMessage.username = username;
+                newMessage.message = message;
+                newMessage.type = "REGULAR_MESSAGE";
+
+                chat.push(newMessage);
+
+                members.forEach((username, userId) => {
+                    this.clients
+                        .getById(userId)
+                        .send("NEW_OFFICE_MESSAGE", newMessage);
+                });
+            }
+        );
+
+        this.onMessage(
+            "PUSH_GLOBAL_CHAT_MESSAGE",
+            (client, { username, message }) => {
+                const newMessage = new OfficeChat();
+                newMessage.username = username;
+                newMessage.message = message;
                 newMessage.type = "REGULAR_MESSAGE";
 
                 this.state.globalChat.push(newMessage);
@@ -269,8 +227,8 @@ export class MyRoom extends Room<MyRoomState> {
 
         this.onMessage(
             "USER_STOPPED_SCREEN_SHARING",
-            (client, office: OfficeType) => {
-                const { members } = this.getOfficeData(office);
+            (client, officeName: officeNames) => {
+                const { members } = this.getOfficeData(officeName);
                 members.forEach((username, userId) => {
                     // preventing sending message to ourself
                     if (userId === client.sessionId) return;
@@ -282,22 +240,25 @@ export class MyRoom extends Room<MyRoomState> {
             }
         );
 
-        this.onMessage("USER_STOPPED_WEBCAM", (client, office: OfficeType) => {
-            const { members } = this.getOfficeData(office);
-            members.forEach((username, userId) => {
-                // preventing sending message to ourself
-                if (userId === client.sessionId) return;
+        this.onMessage(
+            "USER_STOPPED_WEBCAM",
+            (client, officeName: officeNames) => {
+                const { members } = this.getOfficeData(officeName);
+                members.forEach((username, userId) => {
+                    // preventing sending message to ourself
+                    if (userId === client.sessionId) return;
 
-                this.clients
-                    .getById(userId)
-                    .send("USER_STOPPED_WEBCAM", client.sessionId);
-            });
-        });
+                    this.clients
+                        .getById(userId)
+                        .send("USER_STOPPED_WEBCAM", client.sessionId);
+                });
+            }
+        );
 
         this.onMessage(
             "CONNECT_TO_VIDEO_CALL",
-            (client, office: OfficeType) => {
-                const { members } = this.getOfficeData(office);
+            (client, officeName: officeNames) => {
+                const { members } = this.getOfficeData(officeName);
                 members.forEach((username, userId) => {
                     if (userId === client.sessionId) return;
 
@@ -334,7 +295,7 @@ export class MyRoom extends Room<MyRoomState> {
         });
 
         // sending whole chat to the newly joined user
-        client.send("GET_WHOLE_GLOBAL_CHAT", this.state.globalChat);
+        client.send("GET_GLOBAL_CHAT", this.state.globalChat);
     }
 
     onLeave(client: Client, consented: boolean) {
@@ -350,10 +311,10 @@ export class MyRoom extends Room<MyRoomState> {
         this.state.globalChat.push(newMessage);
         this.broadcast("NEW_GLOBAL_CHAT_MESSAGE", newMessage);
 
-        const officeType = this.getUserOfficeType(client.sessionId);
+        const officeName = this.getUserOfficeName(client.sessionId);
 
-        if (officeType) {
-            this.handleLeftOffice(client, username, officeType);
+        if (officeName) {
+            this.handleOfficeLeave(client, username, officeName);
         }
     }
 

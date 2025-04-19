@@ -28,6 +28,7 @@ import {
     disconnectUserForVideoCalling,
     removeAllPeerConnectionsForVideoCalling,
 } from "../../app/features/webRtc/webcamSlice";
+import { OfficeManager } from "./OfficeManager";
 
 type officeNames =
     | "mainOffice"
@@ -40,8 +41,8 @@ export default class Network {
     client: Client;
     room!: Room;
     lobby!: Room;
-    currentSpace: officeNames;
-    prevSpace: officeNames;
+    currentOffice: officeNames;
+    officeManager: OfficeManager;
     currentPlayer: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
     cursorKeys: Phaser.Types.Input.Keyboard.CursorKeys;
     playerEntities: {
@@ -49,11 +50,38 @@ export default class Network {
     } = {};
     username: string;
     character: string;
+    lastX: number;
+    lastY: number;
     lastPressedKey = "down";
+    static OFFICE_COORDINATES: {
+        name: officeNames;
+        rect: Phaser.Geom.Rectangle;
+    }[] = [
+        {
+            name: "mainOffice",
+            rect: new Phaser.Geom.Rectangle(799.85, 608.02, 799.85, 512.02),
+        },
+        {
+            name: "eastOffice",
+            rect: new Phaser.Geom.Rectangle(63.96, 351.94, 384.12, 768.09),
+        },
+        {
+            name: "westOffice",
+            rect: new Phaser.Geom.Rectangle(1920.0, 608.25, 448.13, 544.0),
+        },
+        {
+            name: "northOffice1",
+            rect: new Phaser.Geom.Rectangle(927.85, 156.61, 512.09, 259.42),
+        },
+        {
+            name: "northOffice2",
+            rect: new Phaser.Geom.Rectangle(1471.97, 156.61, 512.09, 259.42),
+        },
+    ];
 
     constructor() {
         this.client = new Client(BACKEND_URL);
-
+        this.officeManager = new OfficeManager();
         this.joinLobbyRoom();
     }
 
@@ -193,9 +221,9 @@ export default class Network {
 
         // when player uses "Disconnect from video call button" and then turns on his camera again,
         // then we need to let other players know that the current player has started his webcam again.
+        // TODO: Investigate this logic....
         if (shouldConnectToOtherPlayers) {
-            const currentOffice = this.getCurrentOffice();
-            this.room.send("CONNECT_TO_VIDEO_CALL", currentOffice);
+            this.room.send("CONNECT_TO_VIDEO_CALL", this.currentOffice);
         }
     };
 
@@ -223,7 +251,7 @@ export default class Network {
      *
      * @param officeName office's name
      */
-    private getOfficeData = (officeName: officeNames = this.currentSpace) => {
+    private getOfficeData = (officeName: officeNames = this.currentOffice) => {
         const officeMap = {
             mainOffice: {
                 members: this.room.state.mainOfficeMembers,
@@ -256,26 +284,7 @@ export default class Network {
      * @param officeName office's name
      */
     private joinOffice = (officeName: officeNames) => {
-        this.currentSpace = officeName;
-
-        let roomName: string;
-        switch (officeName) {
-            case "mainOffice":
-                roomName = "MAIN";
-                break;
-            case "eastOffice":
-                roomName = "EAST";
-                break;
-            case "westOffice":
-                roomName = "WEST";
-                break;
-            case "northOffice1":
-                roomName = "NORTH_1";
-                break;
-            case "northOffice2":
-                roomName = "NORTH_2";
-                break;
-        }
+        this.currentOffice = officeName;
 
         store.dispatch(setShowOfficeChat(true));
 
@@ -285,20 +294,17 @@ export default class Network {
             this.startWebcam();
         }
 
-        // connect to the office
-        this.room.send(`JOIN_${roomName}_OFFICE`, this.username);
+        // notify other players & connect to the office
+        this.room.send(`JOIN_OFFICE`, {
+            username: this.username,
+            office: officeName,
+        });
 
         // TODO: Instead of adding & removing data in playerNameMap
         // as player joins or leaves a room,
         // maintain this map from the moment player joins the game
         const { members } = this.getOfficeData();
         members.forEach((username, sessionId) => {
-            console.log(
-                "username: ",
-                username,
-                "sessionid: ",
-                sanitizeUserIdForScreenSharing(sessionId)
-            );
             store.dispatch(
                 setPlayerNameMap({
                     peerId: sanitizeUserIdForScreenSharing(sessionId),
@@ -308,66 +314,21 @@ export default class Network {
         });
     };
 
-    private getCurrentOffice = () => {
-        let currentOffice: string;
-        switch (this.currentSpace) {
-            case "mainOffice":
-                currentOffice = "MAIN";
-                break;
-            case "eastOffice":
-                currentOffice = "EAST";
-                break;
-            case "westOffice":
-                currentOffice = "WEST";
-                break;
-            case "northOffice1":
-                currentOffice = "NORTH_1";
-                break;
-            case "northOffice2":
-                currentOffice = "NORTH_2";
-                break;
-        }
+    private leaveOffice = () => {
+        store.dispatch(setShowOfficeChat(false));
 
-        return currentOffice;
-    };
+        this.room.send("LEAVE_OFFICE", {
+            username: this.username,
+            office: this.currentOffice,
+        });
 
-    /**
-     * Handles office specific chat messages.
-     *
-     * @param officeName newly received message's office name
-     * @param serverData chat message received from server
-     */
-    private handleChatMessages = (officeName: officeNames, serverData) => {
-        const { chat, members } = this.getOfficeData(officeName);
+        store.dispatch(clearOfficeChat()); // player left the office so clear the redux state as well
+        store.dispatch(setShowOfficeChat(false));
+        store.dispatch(removeAllPeerConnectionsForVideoCalling());
+        store.dispatch(removeAllPeerConnectionsForScreenSharing());
+        store.dispatch(clearPlayerNameMap());
 
-        const isInOffice: boolean = members.has(this.room.sessionId);
-
-        // if current player is not in the space for which message is received then don't do anything.
-        if (!isInOffice) return;
-
-        if (this.prevSpace === officeName) {
-            // this means the player is already in the office
-            // so push whatever message comes from server.
-            store.dispatch(
-                pushNewOfficeMessage({
-                    username: serverData.username,
-                    message: serverData.message,
-                    type: serverData.type,
-                })
-            );
-        } else {
-            // this means that the player just joined main,
-            // so we will get the whole chat and push it to the redux store.
-            const allMessages = chat.map((msg) => {
-                return {
-                    username: msg.username,
-                    message: msg.message,
-                    type: msg.type,
-                };
-            });
-            store.dispatch(addOfficeChat(allMessages));
-            this.prevSpace = officeName;
-        }
+        this.currentOffice = null;
     };
 
     /**
@@ -379,8 +340,7 @@ export default class Network {
     playerStoppedScreenSharing = () => {
         // TODO: Add a common folder between server & client where all types can be declared.
         // because currentOffice can be set to invalid string which server cannot handle.
-        const currentOffice = this.getCurrentOffice();
-        this.room.send("USER_STOPPED_SCREEN_SHARING", currentOffice);
+        this.room.send("USER_STOPPED_SCREEN_SHARING", this.currentOffice);
     };
 
     /**
@@ -392,10 +352,8 @@ export default class Network {
     playerStoppedWebcam = () => {
         // TODO: Add a common folder between server & client where all types can be declared.
         // because currentOffice can be set to invalid string which server cannot handle.
-        const currentOffice = this.getCurrentOffice();
-
         store.dispatch(disconnectFromVideoCall());
-        this.room.send("USER_STOPPED_WEBCAM", currentOffice);
+        this.room.send("USER_STOPPED_WEBCAM", this.currentOffice);
     };
 
     /**
@@ -404,38 +362,10 @@ export default class Network {
      * @param content message content.
      */
     addNewOfficeMessage = (content: string) => {
-        let addMessage: string;
-
-        // setting add message according to currently joined space
-        switch (this.currentSpace) {
-            case "mainOffice":
-                addMessage = "ADD_MAIN_OFFICE_MESSAGE";
-                break;
-
-            case "eastOffice":
-                addMessage = "ADD_EAST_OFFICE_MESSAGE";
-                break;
-
-            case "westOffice":
-                addMessage = "ADD_WEST_OFFICE_MESSAGE";
-                break;
-
-            case "northOffice1":
-                addMessage = "ADD_NORTH_OFFICE_1_MESSAGE";
-                break;
-
-            case "northOffice2":
-                addMessage = "ADD_NORTH_OFFICE_2_MESSAGE";
-                break;
-
-            default:
-                console.log("invalid currentSpace: ", this.currentSpace);
-                break;
-        }
-
-        this.room.send(addMessage, {
+        this.room.send("PUSH_OFFICE_MESSAGE", {
             username: this.username,
             message: content,
+            officeName: this.currentOffice,
         });
     };
 
@@ -445,7 +375,7 @@ export default class Network {
      * @param content message content.
      */
     addNewGlobalChatMessage = (content: string) => {
-        this.room.send("ADD_NEW_GLOBAL_CHAT_MESSAGE", {
+        this.room.send("PUSH_GLOBAL_CHAT_MESSAGE", {
             username: this.username,
             message: content,
         });
@@ -470,35 +400,6 @@ export default class Network {
     };
 
     /**
-     * Handles office specific messages.
-     *
-     * TODO: Currently we rely on onAdd messages from server.
-     *       All offices have it's onAdd messages, they're all handles in this method.
-     *       Instead of this, use onMessage to handle messages from all offices.
-     */
-    handleOfficeMessages = () => {
-        this.room.state.mainOfficeChat.onAdd((serverData) => {
-            this.handleChatMessages("mainOffice", serverData);
-        });
-
-        this.room.state.eastOfficeChat.onAdd((serverData) => {
-            this.handleChatMessages("eastOffice", serverData);
-        });
-
-        this.room.state.westOfficeChat.onAdd((serverData) => {
-            this.handleChatMessages("westOffice", serverData);
-        });
-
-        this.room.state.northOffice1Chat.onAdd((serverData) => {
-            this.handleChatMessages("northOffice1", serverData);
-        });
-
-        this.room.state.northOffice2Chat.onAdd((serverData) => {
-            this.handleChatMessages("northOffice2", serverData);
-        });
-    };
-
-    /**
      * Handles all types of server messages.
      *
      * This method currently handles all types of messages from server,
@@ -512,12 +413,20 @@ export default class Network {
     handleServerMessages = () => {
         // TODO: Fix "Cannot call peer - No local stream available"
         this.room.onMessage(
-            "CONNECT_TO_WEBRTC",
-            async ({ playerSessionId, username }) => {
+            "USER_JOINED_OFFICE",
+            async ({ playerSessionId, username, message, type }) => {
                 store.dispatch(
                     setPlayerNameMap({
                         peerId: sanitizeUserIdForScreenSharing(playerSessionId),
                         username,
+                    })
+                );
+
+                store.dispatch(
+                    pushNewOfficeMessage({
+                        username,
+                        message,
+                        type,
                     })
                 );
 
@@ -528,14 +437,48 @@ export default class Network {
             }
         );
 
-        this.room.onMessage("DISCONNECT_FROM_WEBRTC", (playerSessionId) => {
-            store.dispatch(disconnectUserForVideoCalling(playerSessionId));
-            store.dispatch(disconnectUserForScreenSharing(playerSessionId));
-            store.dispatch(
-                removePlayerNameMap(
-                    sanitizeUserIdForScreenSharing(playerSessionId)
-                )
-            );
+        this.room.onMessage(
+            "NEW_OFFICE_MESSAGE",
+            ({ username, message, type }) => {
+                store.dispatch(
+                    pushNewOfficeMessage({
+                        username,
+                        message,
+                        type,
+                    })
+                );
+            }
+        );
+
+        this.room.onMessage(
+            "PLAYER_LEFT_OFFICE",
+            ({ playerSessionId, username, message, type }) => {
+                store.dispatch(
+                    pushNewOfficeMessage({
+                        username: username,
+                        message: message,
+                        type: type,
+                    })
+                );
+                store.dispatch(disconnectUserForVideoCalling(playerSessionId));
+                store.dispatch(disconnectUserForScreenSharing(playerSessionId));
+                store.dispatch(
+                    removePlayerNameMap(
+                        sanitizeUserIdForScreenSharing(playerSessionId)
+                    )
+                );
+            }
+        );
+
+        this.room.onMessage("GET_OFFICE_CHAT", (officeChat) => {
+            const allMessages = officeChat.map((msg) => {
+                return {
+                    username: msg.username,
+                    message: msg.message,
+                    type: msg.type,
+                };
+            });
+            store.dispatch(addOfficeChat(allMessages));
         });
 
         this.room.onMessage("CONNECT_TO_VIDEO_CALL", (playerSessionId) => {
@@ -552,7 +495,7 @@ export default class Network {
             );
         });
 
-        this.room.onMessage("GET_WHOLE_GLOBAL_CHAT", (globalChatMessages) => {
+        this.room.onMessage("GET_GLOBAL_CHAT", (globalChatMessages) => {
             const allMessages = globalChatMessages.map((msg) => {
                 return {
                     username: msg.username,
@@ -595,52 +538,50 @@ export default class Network {
         this.currentPlayer.setVelocity(0);
 
         // Apply movement using velocity instead of position
+        let anim: string;
         if (this.cursorKeys.left.isDown) {
             this.currentPlayer.setVelocityX(-velocity);
             this.currentPlayer.anims.play(`${this.character}_left_run`, true);
-            this.room.send(0, {
-                playerX: this.currentPlayer.x,
-                playerY: this.currentPlayer.y,
-                anim: `${this.character}_left_run`,
-            });
             this.lastPressedKey = "left";
         } else if (this.cursorKeys.right.isDown) {
             this.currentPlayer.setVelocityX(velocity);
             this.currentPlayer.anims.play(`${this.character}_right_run`, true);
-            this.room.send(0, {
-                playerX: this.currentPlayer.x,
-                playerY: this.currentPlayer.y,
-                anim: `${this.character}_right_run`,
-            });
             this.lastPressedKey = "right";
         } else if (this.cursorKeys.up.isDown) {
             this.currentPlayer.setVelocityY(-velocity);
             this.currentPlayer.anims.play(`${this.character}_up_run`, true);
-            this.room.send(0, {
-                playerX: this.currentPlayer.x,
-                playerY: this.currentPlayer.y,
-                anim: `${this.character}_up_run`,
-            });
             this.lastPressedKey = "up";
         } else if (this.cursorKeys.down.isDown) {
             this.currentPlayer.setVelocityY(velocity);
             this.currentPlayer.anims.play(`${this.character}_down_run`, true);
-            this.room.send(0, {
-                playerX: this.currentPlayer.x,
-                playerY: this.currentPlayer.y,
-                anim: `${this.character}_down_run`,
-            });
             this.lastPressedKey = "down";
         } else {
             this.currentPlayer.anims.play(
                 `${this.character}_${this.lastPressedKey}_idle`,
                 true
             );
+        }
+
+        const { x, y } = this.currentPlayer;
+
+        if (x !== this.lastX || y !== this.lastY) {
             this.room.send(0, {
                 playerX: this.currentPlayer.x,
                 playerY: this.currentPlayer.y,
-                anim: `${this.character}_${this.lastPressedKey}_idle`,
+                anim,
             });
+
+            const zone = this.officeManager.update(x, y);
+
+            if (zone && this.currentOffice !== zone) {
+                this.currentOffice = zone;
+                this.joinOffice(zone);
+            } else if (!zone && this.currentOffice) {
+                this.leaveOffice();
+            }
+
+            this.lastX = x;
+            this.lastY = y;
         }
 
         // interpolate other players.
@@ -655,122 +596,6 @@ export default class Network {
                 entity.y = Phaser.Math.Linear(entity.y, serverY, 0.2);
                 entity.anims.play(anim, true);
             }
-        }
-
-        const mainOfficeX = 799.85;
-        const mainOfficeY = 608.02;
-        const mainOfficeWidth = 799.85;
-        const mainOfficeHeight = 512.02;
-
-        const isInsideMainOffice =
-            this.currentPlayer.x >= mainOfficeX &&
-            this.currentPlayer.x <= mainOfficeX + mainOfficeWidth &&
-            this.currentPlayer.y >= mainOfficeY &&
-            this.currentPlayer.y <= mainOfficeY + mainOfficeHeight;
-
-        const eastOfficeX = 63.96;
-        const eastOfficeY = 351.94;
-        const eastOfficeWidth = 384.12;
-        const eastOfficeHeight = 768.09;
-
-        const isInsideEastOffice =
-            this.currentPlayer.x >= eastOfficeX &&
-            this.currentPlayer.x <= eastOfficeX + eastOfficeWidth &&
-            this.currentPlayer.y >= eastOfficeY &&
-            this.currentPlayer.y <= eastOfficeY + eastOfficeHeight;
-
-        const westOfficeX = 1920.0;
-        const westOfficeY = 608.25;
-        const westOfficeWidth = 448.13;
-        const westOfficeHeight = 544.0;
-
-        const isInsideWestOffice =
-            this.currentPlayer.x >= westOfficeX &&
-            this.currentPlayer.x <= westOfficeX + westOfficeWidth &&
-            this.currentPlayer.y >= westOfficeY &&
-            this.currentPlayer.y <= westOfficeY + westOfficeHeight;
-
-        const northOffice1X = 927.85;
-        const northOffice1Y = 156.61;
-        const northOffice1Width = 512.09;
-        const northOffice1Height = 259.42;
-
-        const isInsideNorthOffice1 =
-            this.currentPlayer.x >= northOffice1X &&
-            this.currentPlayer.x <= northOffice1X + northOffice1Width &&
-            this.currentPlayer.y >= northOffice1Y &&
-            this.currentPlayer.y <= northOffice1Y + northOffice1Height;
-
-        const northOffice2X = 1471.97;
-        const northOffice2Y = 156.61;
-        const northOffice2Width = 512.09;
-        const northOffice2Height = 259.42;
-
-        const isInsideNorthOffice2 =
-            this.currentPlayer.x >= northOffice2X &&
-            this.currentPlayer.x <= northOffice2X + northOffice2Width &&
-            this.currentPlayer.y >= northOffice2Y &&
-            this.currentPlayer.y <= northOffice2Y + northOffice2Height;
-
-        if (isInsideMainOffice && this.currentSpace !== "mainOffice") {
-            console.log("in main office");
-            this.joinOffice("mainOffice");
-        } else if (isInsideEastOffice && this.currentSpace !== "eastOffice") {
-            console.log("in east office");
-            this.joinOffice("eastOffice");
-        } else if (isInsideWestOffice && this.currentSpace !== "westOffice") {
-            console.log("in west office");
-            this.joinOffice("westOffice");
-        } else if (
-            isInsideNorthOffice1 &&
-            this.currentSpace !== "northOffice1"
-        ) {
-            console.log("in north office 1");
-            this.joinOffice("northOffice1");
-        } else if (
-            isInsideNorthOffice2 &&
-            this.currentSpace !== "northOffice2"
-        ) {
-            console.log("in north office 2");
-            this.joinOffice("northOffice2");
-        }
-
-        if (
-            !isInsideMainOffice &&
-            !isInsideEastOffice &&
-            !isInsideWestOffice &&
-            !isInsideNorthOffice1 &&
-            !isInsideNorthOffice2 &&
-            this.prevSpace
-        ) {
-            store.dispatch(setShowOfficeChat(false));
-            let room: string;
-            switch (this.currentSpace) {
-                case "mainOffice":
-                    room = "LEFT_MAIN_OFFICE";
-                    break;
-                case "eastOffice":
-                    room = "LEFT_EAST_OFFICE";
-                    break;
-                case "westOffice":
-                    room = "LEFT_WEST_OFFICE";
-                    break;
-                case "northOffice1":
-                    room = "LEFT_NORTH_1_OFFICE";
-                    break;
-                case "northOffice2":
-                    room = "LEFT_NORTH_2_OFFICE";
-                    break;
-            }
-
-            this.room.send(room, this.username);
-            store.dispatch(clearOfficeChat()); // player left the office so clear the redux state as well
-            store.dispatch(setShowOfficeChat(false));
-            store.dispatch(removeAllPeerConnectionsForVideoCalling());
-            store.dispatch(removeAllPeerConnectionsForScreenSharing());
-            store.dispatch(clearPlayerNameMap());
-            this.currentSpace = null;
-            this.prevSpace = null;
         }
     };
 }
