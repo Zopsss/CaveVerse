@@ -218,13 +218,19 @@ export class MyRoom extends Room<MyRoomState> {
         this.onMessage(
             "PUSH_GLOBAL_CHAT_MESSAGE",
             (client, { username, message }) => {
+                const type = "REGULAR_MESSAGE";
+
                 const newMessage = new OfficeChat();
                 newMessage.username = username;
                 newMessage.message = message;
-                newMessage.type = "REGULAR_MESSAGE";
+                newMessage.type = type;
 
                 this.state.globalChat.push(newMessage);
-                this.broadcast("NEW_GLOBAL_CHAT_MESSAGE", newMessage);
+                this.broadcast("NEW_GLOBAL_CHAT_MESSAGE", {
+                    username,
+                    message,
+                    type,
+                });
             }
         );
 
@@ -244,7 +250,7 @@ export class MyRoom extends Room<MyRoomState> {
         );
 
         this.onMessage(
-            "USER_STOPPED_WEBCAM",
+            "USER_STOPPED_OFFICE_WEBCAM",
             (client, officeName: officeNames) => {
                 const { members } = this.getOfficeData(officeName);
                 members.forEach((username, userId) => {
@@ -253,13 +259,24 @@ export class MyRoom extends Room<MyRoomState> {
 
                     this.clients
                         .getById(userId)
-                        .send("USER_STOPPED_WEBCAM", client.sessionId);
+                        .send("END_VIDEO_CALL_WITH_USER", client.sessionId);
                 });
             }
         );
 
         this.onMessage(
-            "CONNECT_TO_VIDEO_CALL",
+            "USER_STOPPED_PROXIMITY_WEBCAM",
+            (client, proximityPlayers) => {
+                proximityPlayers.forEach((player: string) => {
+                    this.clients
+                        .getById(player)
+                        .send("END_VIDEO_CALL_WITH_USER", client.sessionId);
+                });
+            }
+        );
+
+        this.onMessage(
+            "CONNECT_TO_OFFICE_VIDEO_CALL",
             (client, officeName: officeNames) => {
                 const { members } = this.getOfficeData(officeName);
                 members.forEach((username, userId) => {
@@ -269,6 +286,26 @@ export class MyRoom extends Room<MyRoomState> {
                         .getById(userId)
                         .send("CONNECT_TO_VIDEO_CALL", client.sessionId);
                 });
+            }
+        );
+
+        this.onMessage(
+            "CONNECT_TO_PROXIMITY_VIDEO_CALL",
+            (client, proximityPlayers) => {
+                proximityPlayers.forEach((player: string) => {
+                    this.clients
+                        .getById(player)
+                        .send("CONNECT_TO_VIDEO_CALL", client.sessionId);
+                });
+            }
+        );
+
+        this.onMessage(
+            "REMOVE_FROM_PROXIMITY_CALL",
+            (client, proximityPlayerSessionId) => {
+                this.clients
+                    .getById(proximityPlayerSessionId)
+                    .send("END_VIDEO_CALL_WITH_USER", client.sessionId);
             }
         );
     }
@@ -286,16 +323,24 @@ export class MyRoom extends Room<MyRoomState> {
 
         this.state.players.set(client.sessionId, player);
 
+        const username = options.username;
+        const message = "Just joined the lobby!";
+        const type = "PLAYER_JOINED";
+
         const newMessage = new OfficeChat();
-        newMessage.type = "PLAYER_JOINED";
-        newMessage.message = `Just joined the lobby!`;
-        newMessage.username = options.username;
+        newMessage.username = username;
+        newMessage.message = message;
+        newMessage.type = type;
         this.state.globalChat.push(newMessage);
 
         // notifying all users expect the newly joined user that a new user has joined
-        this.broadcast("NEW_GLOBAL_CHAT_MESSAGE", newMessage, {
-            except: [client],
-        });
+        this.broadcast(
+            "NEW_GLOBAL_CHAT_MESSAGE",
+            { username, message, type },
+            {
+                except: [client],
+            }
+        );
 
         // sending whole chat to the newly joined user
         client.send("GET_GLOBAL_CHAT", this.state.globalChat);
@@ -304,15 +349,24 @@ export class MyRoom extends Room<MyRoomState> {
     onLeave(client: Client, consented: boolean) {
         console.log(client.sessionId, "left!");
 
-        const newMessage = new OfficeChat();
         const username = this.state.players.get(client.sessionId).username;
-        newMessage.type = "PLAYER_LEFT";
+
+        const type = "PLAYER_LEFT";
+        const message = `Left the lobby!`;
+
+        const newMessage = new OfficeChat();
+        newMessage.type = type;
         newMessage.username = username;
-        newMessage.message = `Left the lobby!`;
+        newMessage.message = message;
 
         this.state.players.delete(client.sessionId);
         this.state.globalChat.push(newMessage);
-        this.broadcast("NEW_GLOBAL_CHAT_MESSAGE", newMessage);
+        this.broadcast("NEW_GLOBAL_CHAT_MESSAGE", {
+            sessionId: client.sessionId,
+            username,
+            message,
+            type,
+        });
 
         const officeName = this.getUserOfficeName(client.sessionId);
 

@@ -167,6 +167,7 @@ export class GameScene extends Phaser.Scene {
         if (!this.network) {
             return;
         }
-        this.network.update();
+
+        this.network.update(time, delta);
     }
 }

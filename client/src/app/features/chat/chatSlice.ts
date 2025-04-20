@@ -23,13 +23,10 @@ const chatSlice = createSlice({
             state.officeChatMessages.push(action.payload);
         },
         addOfficeChat: (state, action: PayloadAction<ChatMessageType[]>) => {
-            console.log("action: ", action.payload);
             state.officeChatMessages = [...action.payload];
-            console.log("new chatMessage: ", state.officeChatMessages);
         },
         clearOfficeChat: (state) => {
             state.officeChatMessages = [];
-            console.log("chat cleared: ", state.officeChatMessages);
         },
         setShowOfficeChat: (state, action: PayloadAction<boolean>) => {
             state.showOfficeChat = action.payload;
@@ -43,9 +40,7 @@ const chatSlice = createSlice({
             state.globalChatMessages.push(action.payload);
         },
         addGlobalChat: (state, action: PayloadAction<ChatMessageType[]>) => {
-            console.log("action: ", action.payload);
             state.globalChatMessages = [...action.payload];
-            console.log("new chatMessage: ", state.globalChatMessages);
         },
     },
 });

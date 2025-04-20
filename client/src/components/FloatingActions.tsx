@@ -23,8 +23,10 @@ import { toast } from "sonner";
 import { useState } from "react";
 
 const FloatingActions = ({
+    isInsideOffice,
     setScreenDialogOpen,
 }: {
+    isInsideOffice: boolean;
     setScreenDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
     const [shouldConnectToOtherPlayers, setShouldConnectToOtherPlayers] =
@@ -50,22 +52,24 @@ const FloatingActions = ({
         >
             <TooltipProvider>
                 {/* Screen Sharing */}
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            variant="outline"
-                            className="cursor-pointer "
-                            onClick={() => {
-                                setScreenDialogOpen(true);
-                            }}
-                        >
-                            <ScreenShare />
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p className="text-black">Screen Sharing</p>
-                    </TooltipContent>
-                </Tooltip>
+                {isInsideOffice && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="outline"
+                                className="cursor-pointer "
+                                onClick={() => {
+                                    setScreenDialogOpen(true);
+                                }}
+                            >
+                                <ScreenShare />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p className="text-black">Screen Sharing</p>
+                        </TooltipContent>
+                    </Tooltip>
+                )}
 
                 {myWebcamStream ? (
                     // Player has given access to his webcam
