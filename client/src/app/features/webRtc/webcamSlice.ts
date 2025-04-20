@@ -7,6 +7,7 @@ interface InitialState {
     peerStreams: Map<string, { call: MediaConnection; stream: MediaStream }>;
     isWebcamOn: boolean;
     isMicOn: boolean;
+    isDisconnectedFromVideoCalls: boolean;
 }
 
 const initialState: InitialState = {
@@ -14,6 +15,7 @@ const initialState: InitialState = {
     peerStreams: new Map(),
     isWebcamOn: false,
     isMicOn: false,
+    isDisconnectedFromVideoCalls: false,
 };
 
 const webcamSlice = createSlice({
@@ -25,6 +27,7 @@ const webcamSlice = createSlice({
             state.myWebcamStream = action.payload;
             state.isWebcamOn = true;
             state.isMicOn = true;
+            state.isDisconnectedFromVideoCalls = false;
         },
         toggleWebcam: (state) => {
             state.myWebcamStream.getVideoTracks()[0].enabled =
@@ -102,6 +105,8 @@ const webcamSlice = createSlice({
             });
 
             state.peerStreams.clear();
+
+            state.isDisconnectedFromVideoCalls = true;
         },
     },
 });
