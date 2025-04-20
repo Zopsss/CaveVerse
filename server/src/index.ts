@@ -10,44 +10,10 @@ import { MyRoom } from "./rooms/MyRoom";
 const port = Number(process.env.PORT || 2567);
 const app = express();
 
-const allowedOrigins = [
-    "http://localhost:5173",
-    "https://caveverse-frontend.onrender.com",
-];
-
-// ✅ Apply CORS for Express routes
-app.use(
-    cors({
-        origin: (origin, callback) => {
-            if (!origin || allowedOrigins.includes(origin)) {
-                callback(null, true);
-            } else {
-                callback(new Error("Not allowed by CORS"));
-            }
-        },
-        credentials: true,
-    })
-);
+app.use(cors());
 app.use(express.json());
 
 const server = http.createServer(app);
-
-// ✅ Manually handle CORS for Colyseus matchmake routes
-server.on("request", (req, res) => {
-    const origin = req.headers.origin;
-    if (allowedOrigins.includes(origin || "")) {
-        res.setHeader("Access-Control-Allow-Origin", "*");
-        res.setHeader("Access-Control-Allow-Credentials", "true");
-        res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-        res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-        if (req.method === "OPTIONS") {
-            res.writeHead(204);
-            res.end();
-        }
-    }
-});
-
 const gameServer = new Server({
     server,
 });
