@@ -76,4 +76,21 @@ export class OfficeManager {
 
         return null;
     }
+
+    /**
+     * Checks if a player is inside an office or not.
+     *
+     * @param x player's x position
+     * @param y player's y position
+     * @returns true if player is inside an office otherwise false
+     */
+    public static isInOffice(x: number, y: number): boolean {
+        for (const office of OfficeManager.OFFICES) {
+            if (Phaser.Geom.Rectangle.Contains(office.rect, x, y)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
