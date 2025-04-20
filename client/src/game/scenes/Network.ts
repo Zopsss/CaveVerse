@@ -48,10 +48,20 @@ export default class Network {
     otherPlayers: {
         [sessionId: string]: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
     } = {};
+    proximityPlayers: {
+        [sessionId: string]: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+    } = {};
+    private proximityTimers: {
+        [sessionId: string]: {
+            enterTime: number;
+            connected: boolean;
+        };
+    } = {};
     username: string;
     character: string;
     lastX: number;
     lastY: number;
+    static PROXIMITY_CONNECT_DELAY = 500;
 
     constructor() {
         this.client = new Client(BACKEND_URL);
@@ -125,6 +135,9 @@ export default class Network {
             character: this.character,
         });
         this.lobby.leave();
+
+        // for debugging purpose only, please remove it before merging the PR.
+        console.log("backend url: ", BACKEND_URL);
     };
 
     /**
@@ -183,6 +196,16 @@ export default class Network {
     startWebcam = async (shouldConnectToOtherPlayers = false) => {
         await videoCalling.getUserMedia();
 
+        if (this.currentOffice) {
+            this.shareWebcamWithOfficePlayers(shouldConnectToOtherPlayers);
+        } else {
+            this.shareWebcamWithProximityPlayer(shouldConnectToOtherPlayers);
+        }
+    };
+
+    shareWebcamWithOfficePlayers = async (
+        shouldConnectToOtherPlayers: boolean
+    ) => {
         const { members } = this.getOfficeData();
         members.forEach((username, sessionId) => {
             // preventing calling ourself
@@ -197,7 +220,25 @@ export default class Network {
         // then we need to let other players know that the current player has started his webcam again.
         // TODO: Investigate this logic....
         if (shouldConnectToOtherPlayers) {
-            this.room.send("CONNECT_TO_VIDEO_CALL", this.currentOffice);
+            this.room.send("CONNECT_TO_OFFICE_VIDEO_CALL", this.currentOffice);
+        }
+    };
+
+    shareWebcamWithProximityPlayer = async (
+        shouldConnectToOtherPlayers: boolean
+    ) => {
+        for (const sessionId in this.proximityPlayers) {
+            videoCalling.shareWebcam(sessionId);
+        }
+
+        // when player uses "Disconnect from video call button" and then turns on his camera again,
+        // then we need to let other players know that the current player has started his webcam again.
+        // TODO: Investigate this logic....
+        if (shouldConnectToOtherPlayers) {
+            this.room.send(
+                "CONNECT_TO_PROXIMITY_VIDEO_CALL",
+                Object.keys(this.proximityPlayers)
+            );
         }
     };
 
@@ -259,6 +300,8 @@ export default class Network {
      */
     private joinOffice = (officeName: officeNames) => {
         this.currentOffice = officeName;
+        this.proximityPlayers = {};
+        this.proximityTimers = {};
 
         store.dispatch(setShowOfficeChat(true));
 
@@ -289,8 +332,6 @@ export default class Network {
     };
 
     private leaveOffice = () => {
-        store.dispatch(setShowOfficeChat(false));
-
         this.room.send("LEAVE_OFFICE", {
             username: this.username,
             office: this.currentOffice,
@@ -354,6 +395,108 @@ export default class Network {
     };
 
     /**
+     * Handles proximity chat between players.
+     *
+     * The logic prioritizes disconnection checks before attempting a connection:
+     * 1. If the player moves away after the timer started, disconnect and clean up.
+     * 2. If the proximity player enters an office, disconnect immediately.
+     * 3. Only then, if the player is still near and both are outside any office, start or complete connection.
+     *
+     * This order ensures cleanup and disconnects are handled first, avoiding unnecessary
+     * connection attempts and reducing redundant proximity checks.
+     *
+     * @param time update()'s time (from Phaser's update loop)
+     * @param sessionId session ID of the proximity player
+     * @param otherPlayer the proximity player's sprite
+     */
+
+    private handleProximityChat = (
+        time: number,
+        sessionId: string,
+        otherPlayer: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody
+    ) => {
+        const distance = Phaser.Math.Distance.Between(
+            this.currentPlayer.x,
+            this.currentPlayer.y,
+            otherPlayer.x,
+            otherPlayer.y
+        );
+
+        const proximityPlayer = this.otherPlayers[sessionId];
+        const isProximityPlayerInOffice = OfficeManager.isInOffice(
+            proximityPlayer.x,
+            proximityPlayer.y
+        );
+
+        // disconnect if player was previously tracked but moved away
+        if (this.proximityTimers[sessionId] && distance > 50) {
+            const timer = this.proximityTimers[sessionId];
+
+            // player's timer was started but before connecting
+            // he moved away so no need to keep his timer anymore.
+            if (!timer.connected) {
+                delete this.proximityTimers[sessionId];
+                return;
+            }
+
+            // if moved away player was connected then disconnect with him
+            console.log("player", sessionId, "removed from proximityPlayers");
+            store.dispatch(disconnectUserForVideoCalling(sessionId));
+
+            delete this.proximityPlayers[sessionId];
+            delete this.proximityTimers[sessionId];
+
+            // notifying proximity player to disconnect with current player
+            this.room.send("REMOVE_FROM_PROXIMITY_CALL", sessionId);
+
+            return;
+        }
+
+        // disconnect if player is already connected and entered an office
+        if (this.proximityPlayers[sessionId] && isProximityPlayerInOffice) {
+            console.log("player", sessionId, "removed from proximityPlayers");
+            store.dispatch(disconnectUserForVideoCalling(sessionId));
+
+            delete this.proximityPlayers[sessionId];
+            delete this.proximityTimers[sessionId];
+
+            // notifying proximity player to disconnect with current player
+            this.room.send("REMOVE_FROM_PROXIMITY_CALL", sessionId);
+
+            return;
+        }
+
+        // connect if near and both are not in office
+        if (
+            distance <= 50 &&
+            !this.currentOffice &&
+            !isProximityPlayerInOffice
+        ) {
+            // player just came near the current player, start his timer and return
+            if (!this.proximityTimers[sessionId]) {
+                this.proximityTimers[sessionId] = {
+                    enterTime: time,
+                    connected: false,
+                };
+                return;
+            }
+
+            // player is near for enough time and is not already connected
+            // only then connect with him
+            const timer = this.proximityTimers[sessionId];
+            if (
+                !timer.connected &&
+                time - timer.enterTime >= Network.PROXIMITY_CONNECT_DELAY
+            ) {
+                this.proximityPlayers[sessionId] = otherPlayer;
+                timer.connected = true;
+                console.log("player", sessionId, "added to proximityPlayers");
+                videoCalling.shareWebcam(sessionId);
+            }
+        }
+    };
+
+    /**
      * Stops screen sharing.
      *
      * Letting other players know that the current player
@@ -375,7 +518,14 @@ export default class Network {
         // TODO: Add a common folder between server & client where all types can be declared.
         // because currentOffice can be set to invalid string which server cannot handle.
         store.dispatch(disconnectFromVideoCall());
-        this.room.send("USER_STOPPED_WEBCAM", this.currentOffice);
+        if (this.currentOffice) {
+            this.room.send("USER_STOPPED_OFFICE_WEBCAM", this.currentOffice);
+        } else {
+            this.room.send(
+                "USER_STOPPED_PROXIMITY_WEBCAM",
+                Object.keys(this.proximityPlayers)
+            );
+        }
     };
 
     /**
@@ -507,15 +657,32 @@ export default class Network {
             videoCalling.shareWebcam(playerSessionId);
         });
 
-        this.room.onMessage("NEW_GLOBAL_CHAT_MESSAGE", (serverData) => {
-            store.dispatch(
-                pushNewGlobalMessage({
-                    username: serverData.username,
-                    message: serverData.message,
-                    type: serverData.type,
-                })
-            );
-        });
+        this.room.onMessage(
+            "NEW_GLOBAL_CHAT_MESSAGE",
+            ({ sessionId, username, message, type }) => {
+                // sessionId is sent only with player left game message
+                // otherwise it is not required.
+
+                store.dispatch(
+                    pushNewGlobalMessage({
+                        username,
+                        message,
+                        type,
+                    })
+                );
+
+                // if a player left then check if he was a proximity chat player
+                // if he was then disconnect with him from Video Call
+                if (
+                    type === "PLAYER_LEFT" &&
+                    this.proximityPlayers[sessionId]
+                ) {
+                    store.dispatch(disconnectUserForVideoCalling(sessionId));
+                    delete this.proximityPlayers[sessionId];
+                    delete this.proximityTimers[sessionId];
+                }
+            }
+        );
 
         this.room.onMessage("GET_GLOBAL_CHAT", (globalChatMessages) => {
             const allMessages = globalChatMessages.map((msg) => {
@@ -533,7 +700,7 @@ export default class Network {
             store.dispatch(disconnectUserForScreenSharing(userId));
         });
 
-        this.room.onMessage("USER_STOPPED_WEBCAM", (userId) => {
+        this.room.onMessage("END_VIDEO_CALL_WITH_USER", (userId) => {
             store.dispatch(disconnectUserForVideoCalling(userId));
         });
 
@@ -549,7 +716,7 @@ export default class Network {
     /**
      * Handles real-time movements of player.
      */
-    update = () => {
+    update = (time: number, delta: number) => {
         if (!this.currentPlayer) {
             return;
         }
@@ -559,12 +726,11 @@ export default class Network {
         const { x, y } = this.currentPlayer;
 
         if (x !== this.lastX || y !== this.lastY) {
-            const zone = this.officeManager.update(x, y);
+            const office = this.officeManager.update(x, y);
 
-            if (zone && this.currentOffice !== zone) {
-                this.currentOffice = zone;
-                this.joinOffice(zone);
-            } else if (!zone && this.currentOffice) {
+            if (office && this.currentOffice !== office) {
+                this.joinOffice(office);
+            } else if (!office && this.currentOffice) {
                 this.leaveOffice();
             }
 
@@ -573,7 +739,7 @@ export default class Network {
         }
 
         // interpolate other players.
-        for (let sessionId in this.otherPlayers) {
+        for (const sessionId in this.otherPlayers) {
             // skipping current player
             if (sessionId === this.room.sessionId) continue;
 
@@ -584,6 +750,8 @@ export default class Network {
                 entity.y = Phaser.Math.Linear(entity.y, serverY, 0.2);
                 entity.anims.play(anim, true);
             }
+
+            this.handleProximityChat(time, sessionId, entity);
         }
     };
 }

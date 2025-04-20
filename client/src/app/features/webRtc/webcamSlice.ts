@@ -66,8 +66,10 @@ const webcamSlice = createSlice({
             const sanitizedId = sanitizeUserIdForVideoCalling(action.payload);
             const peer = state.peerStreams.get(sanitizedId);
 
-            peer.call.close();
-            state.peerStreams.delete(sanitizedId);
+            if (peer) {
+                peer.call.close();
+                state.peerStreams.delete(sanitizedId);
+            }
         },
         /**
          * Disconnect all the connected peers with current player.
@@ -75,13 +77,6 @@ const webcamSlice = createSlice({
          * Used when player leaves an office.
          */
         removeAllPeerConnectionsForVideoCalling: (state) => {
-            if (state.myWebcamStream) {
-                state.myWebcamStream.getVideoTracks()[0].enabled = false;
-                state.myWebcamStream.getAudioTracks()[0].enabled = false;
-                state.isWebcamOn = false;
-                state.isMicOn = false;
-            }
-
             state.peerStreams.forEach((peer) => {
                 peer.call.close();
             });
