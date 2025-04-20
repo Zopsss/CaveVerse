@@ -19,7 +19,12 @@ export default config({
     },
 
     initializeExpress: (app) => {
-        app.use(cors());
+        app.use(
+            cors({
+                origin: "https://caveverse-frontend.onrender.com",
+                credentials: true,
+            })
+        );
 
         /**
          * Bind your custom express routes here:
