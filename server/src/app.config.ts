@@ -1,4 +1,5 @@
 import config from "@colyseus/tools";
+import cors from "cors";
 import { monitor } from "@colyseus/monitor";
 import { playground } from "@colyseus/playground";
 import { LobbyRoom } from "colyseus";
@@ -18,6 +19,8 @@ export default config({
     },
 
     initializeExpress: (app) => {
+        app.use(cors());
+
         /**
          * Bind your custom express routes here:
          * Read more: https://expressjs.com/en/starter/basic-routing.html
