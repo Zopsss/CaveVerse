@@ -15,19 +15,22 @@ function App() {
     return (
         <>
             {!roomJoined && <RoomSelection />}
-            {roomJoined && <Chat />}
-            <AnimatePresence mode="wait">
-                {showOfficeChat && (
-                    <FloatingActions
-                        key="floating-buttons"
-                        setScreenDialogOpen={setScreenDialogOpen}
-                    />
-                )}
-            </AnimatePresence>
+            {roomJoined && (
+                <>
+                    <Chat />
+                    <VideoCall />
+                    <AnimatePresence mode="wait">
+                        <FloatingActions
+                            key="floating-buttons"
+                            isInsideOffice={showOfficeChat}
+                            setScreenDialogOpen={setScreenDialogOpen}
+                        />
+                    </AnimatePresence>
+                </>
+            )}
 
             {showOfficeChat && (
                 <>
-                    <VideoCall />
                     <ScreenShare
                         screenDialogOpen={screenDialogOpen}
                         setScreenDialogOpen={setScreenDialogOpen}

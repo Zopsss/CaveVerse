@@ -75,12 +75,12 @@ const webcamSlice = createSlice({
          * Used when player leaves an office.
          */
         removeAllPeerConnectionsForVideoCalling: (state) => {
-            if (state.myWebcamStream) {
-                state.myWebcamStream.getVideoTracks()[0].enabled = false;
-                state.myWebcamStream.getAudioTracks()[0].enabled = false;
-                state.isWebcamOn = false;
-                state.isMicOn = false;
-            }
+            // if (state.myWebcamStream) {
+            //     state.myWebcamStream.getVideoTracks()[0].enabled = false;
+            //     state.myWebcamStream.getAudioTracks()[0].enabled = false;
+            //     state.isWebcamOn = false;
+            //     state.isMicOn = false;
+            // }
 
             state.peerStreams.forEach((peer) => {
                 peer.call.close();

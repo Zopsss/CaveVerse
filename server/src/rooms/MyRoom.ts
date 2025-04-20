@@ -241,7 +241,7 @@ export class MyRoom extends Room<MyRoomState> {
         );
 
         this.onMessage(
-            "USER_STOPPED_WEBCAM",
+            "USER_STOPPED_OFFICE_WEBCAM",
             (client, officeName: officeNames) => {
                 const { members } = this.getOfficeData(officeName);
                 members.forEach((username, userId) => {
@@ -256,7 +256,18 @@ export class MyRoom extends Room<MyRoomState> {
         );
 
         this.onMessage(
-            "CONNECT_TO_VIDEO_CALL",
+            "USER_STOPPED_PROXIMITY_WEBCAM",
+            (client, proximityPlayers) => {
+                proximityPlayers.forEach((player: string) => {
+                    this.clients
+                        .getById(player)
+                        .send("USER_STOPPED_WEBCAM", client.sessionId);
+                });
+            }
+        );
+
+        this.onMessage(
+            "CONNECT_TO_OFFICE_VIDEO_CALL",
             (client, officeName: officeNames) => {
                 const { members } = this.getOfficeData(officeName);
                 members.forEach((username, userId) => {
@@ -264,6 +275,17 @@ export class MyRoom extends Room<MyRoomState> {
 
                     this.clients
                         .getById(userId)
+                        .send("CONNECT_TO_VIDEO_CALL", client.sessionId);
+                });
+            }
+        );
+
+        this.onMessage(
+            "CONNECT_TO_PROXIMITY_VIDEO_CALL",
+            (client, proximityPlayers) => {
+                proximityPlayers.forEach((player: string) => {
+                    this.clients
+                        .getById(player)
                         .send("CONNECT_TO_VIDEO_CALL", client.sessionId);
                 });
             }
@@ -301,15 +323,24 @@ export class MyRoom extends Room<MyRoomState> {
     onLeave(client: Client, consented: boolean) {
         console.log(client.sessionId, "left!");
 
-        const newMessage = new OfficeChat();
         const username = this.state.players.get(client.sessionId).username;
-        newMessage.type = "PLAYER_LEFT";
+
+        const messageType = "PLAYER_LEFT";
+        const message = `Left the lobby!`;
+
+        const newMessage = new OfficeChat();
+        newMessage.type = messageType;
         newMessage.username = username;
-        newMessage.message = `Left the lobby!`;
+        newMessage.message = message;
 
         this.state.players.delete(client.sessionId);
         this.state.globalChat.push(newMessage);
-        this.broadcast("NEW_GLOBAL_CHAT_MESSAGE", newMessage);
+        this.broadcast("NEW_GLOBAL_CHAT_MESSAGE", {
+            sessionId: client.sessionId,
+            username,
+            message,
+            messageType,
+        });
 
         const officeName = this.getUserOfficeName(client.sessionId);
 

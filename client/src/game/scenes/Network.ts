@@ -48,6 +48,9 @@ export default class Network {
     otherPlayers: {
         [sessionId: string]: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
     } = {};
+    proximityPlayers: {
+        [sessionId: string]: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+    } = {};
     username: string;
     character: string;
     lastX: number;
@@ -184,6 +187,16 @@ export default class Network {
     startWebcam = async (shouldConnectToOtherPlayers = false) => {
         await videoCalling.getUserMedia();
 
+        if (this.currentOffice) {
+            this.shareWebcamWithOfficePlayers(shouldConnectToOtherPlayers);
+        } else {
+            this.shareWebcamWithProximityPlayer(shouldConnectToOtherPlayers);
+        }
+    };
+
+    shareWebcamWithOfficePlayers = async (
+        shouldConnectToOtherPlayers: boolean
+    ) => {
         const { members } = this.getOfficeData();
         members.forEach((username, sessionId) => {
             // preventing calling ourself
@@ -198,7 +211,25 @@ export default class Network {
         // then we need to let other players know that the current player has started his webcam again.
         // TODO: Investigate this logic....
         if (shouldConnectToOtherPlayers) {
-            this.room.send("CONNECT_TO_VIDEO_CALL", this.currentOffice);
+            this.room.send("CONNECT_TO_OFFICE_VIDEO_CALL", this.currentOffice);
+        }
+    };
+
+    shareWebcamWithProximityPlayer = async (
+        shouldConnectToOtherPlayers: boolean
+    ) => {
+        for (const sessionId in this.proximityPlayers) {
+            videoCalling.shareWebcam(sessionId);
+        }
+
+        // when player uses "Disconnect from video call button" and then turns on his camera again,
+        // then we need to let other players know that the current player has started his webcam again.
+        // TODO: Investigate this logic....
+        if (shouldConnectToOtherPlayers) {
+            this.room.send(
+                "CONNECT_TO_PROXIMITY_VIDEO_CALL",
+                Object.keys(this.proximityPlayers)
+            );
         }
     };
 
@@ -290,8 +321,6 @@ export default class Network {
     };
 
     private leaveOffice = () => {
-        store.dispatch(setShowOfficeChat(false));
-
         this.room.send("LEAVE_OFFICE", {
             username: this.username,
             office: this.currentOffice,
@@ -328,7 +357,14 @@ export default class Network {
         // TODO: Add a common folder between server & client where all types can be declared.
         // because currentOffice can be set to invalid string which server cannot handle.
         store.dispatch(disconnectFromVideoCall());
-        this.room.send("USER_STOPPED_WEBCAM", this.currentOffice);
+        if (this.currentOffice) {
+            this.room.send("USER_STOPPED_OFFICE_WEBCAM", this.currentOffice);
+        } else {
+            this.room.send(
+                "USER_STOPPED_PROXIMITY_WEBCAM",
+                Object.keys(this.proximityPlayers)
+            );
+        }
     };
 
     /**
@@ -460,15 +496,27 @@ export default class Network {
             videoCalling.shareWebcam(playerSessionId);
         });
 
-        this.room.onMessage("NEW_GLOBAL_CHAT_MESSAGE", (serverData) => {
-            store.dispatch(
-                pushNewGlobalMessage({
-                    username: serverData.username,
-                    message: serverData.message,
-                    type: serverData.type,
-                })
-            );
-        });
+        this.room.onMessage(
+            "NEW_GLOBAL_CHAT_MESSAGE",
+            ({ sessionId, username, message, messageType }) => {
+                store.dispatch(
+                    pushNewGlobalMessage({
+                        username,
+                        message,
+                        type: messageType,
+                    })
+                );
+
+                // if a player left then check if he was a proximity chat player
+                // if he was then disconnect with him from Video Call
+                if (
+                    messageType === "PLAYER_LEFT" &&
+                    this.proximityPlayers[sessionId]
+                ) {
+                    store.dispatch(disconnectUserForVideoCalling(sessionId));
+                }
+            }
+        );
 
         this.room.onMessage("GET_GLOBAL_CHAT", (globalChatMessages) => {
             const allMessages = globalChatMessages.map((msg) => {
@@ -578,7 +626,7 @@ export default class Network {
         }
 
         // interpolate other players.
-        for (let sessionId in this.otherPlayers) {
+        for (const sessionId in this.otherPlayers) {
             // skipping current player
             if (sessionId === this.room.sessionId) continue;
 
@@ -588,6 +636,35 @@ export default class Network {
                 entity.x = Phaser.Math.Linear(entity.x, serverX, 0.2);
                 entity.y = Phaser.Math.Linear(entity.y, serverY, 0.2);
                 entity.anims.play(anim, true);
+            }
+
+            const distance = Phaser.Math.Distance.Between(
+                entity.x,
+                entity.y,
+                this.currentPlayer.x,
+                this.currentPlayer.y
+            );
+
+            if (distance <= 50 && !this.currentOffice) {
+                if (!this.proximityPlayers[sessionId]) {
+                    this.proximityPlayers[sessionId] = entity;
+                    console.log(
+                        "player",
+                        sessionId,
+                        "added to proximityPlayers"
+                    );
+
+                    videoCalling.shareWebcam(sessionId);
+                }
+            } else if (this.proximityPlayers[sessionId]) {
+                delete this.proximityPlayers[sessionId];
+                console.log(
+                    "player",
+                    sessionId,
+                    "removed from proximityPlayers"
+                );
+
+                store.dispatch(disconnectUserForVideoCalling(sessionId));
             }
         }
     };
