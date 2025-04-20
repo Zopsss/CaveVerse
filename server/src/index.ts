@@ -1,17 +1,38 @@
+import http from "http";
+import express from "express";
+import cors from "cors";
+import { Server, LobbyRoom } from "colyseus";
+import { monitor } from "@colyseus/monitor";
+import { MyRoom } from "./rooms/MyRoom";
+
+// import socialRoutes from "@colyseus/social/express"
+
+const port = Number(process.env.PORT || 2567);
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+const server = http.createServer(app);
+const gameServer = new Server({
+    server,
+});
+
+// register room handlers
+gameServer.define("LOBBY_ROOM", LobbyRoom);
+gameServer.define("PUBLIC_ROOM", MyRoom);
+gameServer.define("PRIVATE_ROOM", MyRoom).enableRealtimeListing();
+
 /**
- * IMPORTANT:
- * ---------
- * Do not manually edit this file if you'd like to host your server on Colyseus Cloud
+ * Register @colyseus/social routes
  *
- * If you're self-hosting (without Colyseus Cloud), you can manually
- * instantiate a Colyseus Server as documented here:
- *
- * See: https://docs.colyseus.io/server/api/#constructor-options
+ * - uncomment if you want to use default authentication (https://docs.colyseus.io/server/authentication/)
+ * - also uncomment the import statement
  */
-import { listen } from "@colyseus/tools";
+// app.use("/", socialRoutes);
 
-// Import Colyseus config
-import app from "./app.config";
+// register colyseus monitor AFTER registering your room handlers
+app.use("/colyseus", monitor());
 
-// Create and listen on 2567 (or PORT environment variable.)
-listen(app);
+gameServer.listen(port);
+console.log(`Listening on ws://localhost:${port}`);
