@@ -291,6 +291,7 @@ export default class Network {
      */
     private joinOffice = (officeName: officeNames) => {
         this.currentOffice = officeName;
+        this.proximityPlayers = {};
 
         store.dispatch(setShowOfficeChat(true));
 
@@ -498,19 +499,22 @@ export default class Network {
 
         this.room.onMessage(
             "NEW_GLOBAL_CHAT_MESSAGE",
-            ({ sessionId, username, message, messageType }) => {
+            ({ sessionId, username, message, type }) => {
+                // sessionId is sent only with player left game message
+                // otherwise it is not required.
+
                 store.dispatch(
                     pushNewGlobalMessage({
                         username,
                         message,
-                        type: messageType,
+                        type,
                     })
                 );
 
                 // if a player left then check if he was a proximity chat player
                 // if he was then disconnect with him from Video Call
                 if (
-                    messageType === "PLAYER_LEFT" &&
+                    type === "PLAYER_LEFT" &&
                     this.proximityPlayers[sessionId]
                 ) {
                     store.dispatch(disconnectUserForVideoCalling(sessionId));
@@ -612,12 +616,11 @@ export default class Network {
         const { x, y } = this.currentPlayer;
 
         if (x !== this.lastX || y !== this.lastY) {
-            const zone = this.officeManager.update(x, y);
+            const office = this.officeManager.update(x, y);
 
-            if (zone && this.currentOffice !== zone) {
-                this.currentOffice = zone;
-                this.joinOffice(zone);
-            } else if (!zone && this.currentOffice) {
+            if (office && this.currentOffice !== office) {
+                this.joinOffice(office);
+            } else if (!office && this.currentOffice) {
                 this.leaveOffice();
             }
 
@@ -653,7 +656,6 @@ export default class Network {
                         sessionId,
                         "added to proximityPlayers"
                     );
-
                     videoCalling.shareWebcam(sessionId);
                 }
             } else if (this.proximityPlayers[sessionId]) {
@@ -663,7 +665,6 @@ export default class Network {
                     sessionId,
                     "removed from proximityPlayers"
                 );
-
                 store.dispatch(disconnectUserForVideoCalling(sessionId));
             }
         }

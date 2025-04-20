@@ -215,13 +215,19 @@ export class MyRoom extends Room<MyRoomState> {
         this.onMessage(
             "PUSH_GLOBAL_CHAT_MESSAGE",
             (client, { username, message }) => {
+                const type = "REGULAR_MESSAGE";
+
                 const newMessage = new OfficeChat();
                 newMessage.username = username;
                 newMessage.message = message;
-                newMessage.type = "REGULAR_MESSAGE";
+                newMessage.type = type;
 
                 this.state.globalChat.push(newMessage);
-                this.broadcast("NEW_GLOBAL_CHAT_MESSAGE", newMessage);
+                this.broadcast("NEW_GLOBAL_CHAT_MESSAGE", {
+                    username,
+                    message,
+                    type,
+                });
             }
         );
 
@@ -305,16 +311,24 @@ export class MyRoom extends Room<MyRoomState> {
 
         this.state.players.set(client.sessionId, player);
 
+        const username = options.username;
+        const message = "Just joined the lobby!";
+        const type = "PLAYER_JOINED";
+
         const newMessage = new OfficeChat();
-        newMessage.type = "PLAYER_JOINED";
-        newMessage.message = `Just joined the lobby!`;
-        newMessage.username = options.username;
+        newMessage.username = username;
+        newMessage.message = message;
+        newMessage.type = type;
         this.state.globalChat.push(newMessage);
 
         // notifying all users expect the newly joined user that a new user has joined
-        this.broadcast("NEW_GLOBAL_CHAT_MESSAGE", newMessage, {
-            except: [client],
-        });
+        this.broadcast(
+            "NEW_GLOBAL_CHAT_MESSAGE",
+            { username, message, type },
+            {
+                except: [client],
+            }
+        );
 
         // sending whole chat to the newly joined user
         client.send("GET_GLOBAL_CHAT", this.state.globalChat);
