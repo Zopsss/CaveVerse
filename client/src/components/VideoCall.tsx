@@ -6,6 +6,12 @@ const VideoCall = () => {
         (state) => state.webcam.myWebcamStream
     );
     const peerStreams = useAppSelector((state) => state.webcam.peerStreams);
+    const isDisconnectedFromVideoCalls = useAppSelector(
+        (state) => state.webcam.isDisconnectedFromVideoCalls
+    );
+
+    // if user clicked on "Disconnect from video calls" then do not show any webcams.
+    if (isDisconnectedFromVideoCalls) return;
 
     return (
         <div className="absolute left-[35px] top-[10px] h-screen flex flex-col flex-wrap gap-2">
@@ -22,6 +28,7 @@ const VideoCall = () => {
                     <VideoPlayer
                         stream={value.stream}
                         className="w-48 border-2"
+                        key={key}
                     />
                 );
             })}
