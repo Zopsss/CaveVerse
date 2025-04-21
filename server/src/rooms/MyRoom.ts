@@ -106,7 +106,7 @@ export class MyRoom extends Room<MyRoomState> {
         client.send("GET_OFFICE_CHAT", chat);
 
         // Notify other players when current player enters office.
-        members.forEach((username, userId) => {
+        members.forEach((_, userId) => {
             if (userId === client.sessionId) return;
 
             this.clients.getById(userId).send("USER_JOINED_OFFICE", {
@@ -147,7 +147,7 @@ export class MyRoom extends Room<MyRoomState> {
             members.delete(sessionId);
 
             // Notify other players when current player leaves office.
-            members.forEach((username, userId) => {
+            members.forEach((_, userId) => {
                 this.clients.getById(userId).send("PLAYER_LEFT_OFFICE", {
                     playerSessionId: client.sessionId,
                     username,
@@ -197,17 +197,22 @@ export class MyRoom extends Room<MyRoomState> {
             "PUSH_OFFICE_MESSAGE",
             (client, { username, message, officeName }) => {
                 const { members, chat } = this.getOfficeData(officeName);
+                const type = "REGULAR_MESSAGE";
                 const newMessage = new OfficeChat();
                 newMessage.username = username;
                 newMessage.message = message;
-                newMessage.type = "REGULAR_MESSAGE";
+                newMessage.type = type;
 
                 chat.push(newMessage);
 
-                members.forEach((username, userId) => {
+                members.forEach((_, userId) => {
                     this.clients
                         .getById(userId)
-                        .send("NEW_OFFICE_MESSAGE", newMessage);
+                        .send("NEW_OFFICE_MESSAGE", {
+                            username,
+                            message,
+                            type,
+                        });
                 });
             }
         );
