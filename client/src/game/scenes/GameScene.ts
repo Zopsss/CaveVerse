@@ -138,6 +138,9 @@ export class GameScene extends Phaser.Scene {
                     this.network.room.sessionId
                 );
                 this.network.currentPlayer = entity;
+                this.network.currentPlayer.anims.play(
+                    `${this.network.character}_down_idle`
+                );
                 this.physics.add.collider(
                     this.network.currentPlayer,
                     this.mapLayer
@@ -161,6 +164,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     async update(time: number, delta: number) {
+        if (!this.network) {
+            return;
+        }
         this.network.update();
     }
 }

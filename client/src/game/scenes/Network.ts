@@ -52,7 +52,6 @@ export default class Network {
     character: string;
     lastX: number;
     lastY: number;
-    lastPressedKey = "down";
 
     constructor() {
         this.client = new Client(BACKEND_URL);
@@ -306,6 +305,54 @@ export default class Network {
         this.currentOffice = null;
     };
 
+    /** Handles current player's movements and notifies the server. */
+    private handlePlayerMovements = () => {
+        const speed = 300;
+        let vx = 0;
+        let vy = 0;
+
+        // set velocity x & y and player's animation
+        if (this.cursorKeys.left.isDown) {
+            vx -= speed;
+            this.currentPlayer.anims.play(`${this.character}_left_run`, true);
+        } else if (this.cursorKeys.right.isDown) {
+            vx += speed;
+            this.currentPlayer.anims.play(`${this.character}_right_run`, true);
+        } else if (this.cursorKeys.up.isDown) {
+            vy -= speed;
+            this.currentPlayer.anims.play(`${this.character}_up_run`, true);
+        } else if (this.cursorKeys.down.isDown) {
+            vy += speed;
+            this.currentPlayer.anims.play(`${this.character}_down_run`, true);
+        } else {
+            const parts = this.currentPlayer.anims.currentAnim.key.split("_");
+            parts[2] = "idle"; // getting the last "run" animation and changing it to idle
+            const idleAnim = parts.join("_");
+
+            // this prevents sending idle animation multiple times to the server
+            if (this.currentPlayer.anims.currentAnim.key !== idleAnim) {
+                this.currentPlayer.anims.play(idleAnim, true);
+                this.room.send("PLAYER_MOVED", {
+                    playerX: this.currentPlayer.x,
+                    playerY: this.currentPlayer.y,
+                    anim: idleAnim,
+                });
+            }
+        }
+
+        // set the velocity of the player
+        this.currentPlayer.setVelocity(vx, vy);
+
+        // if player is moving then send his live position to the server.
+        if (vx !== 0 || vy !== 0) {
+            this.room.send("PLAYER_MOVED", {
+                playerX: this.currentPlayer.x,
+                playerY: this.currentPlayer.y,
+                anim: this.currentPlayer.anims.currentAnim.key,
+            });
+        }
+    };
+
     /**
      * Stops screen sharing.
      *
@@ -507,59 +554,7 @@ export default class Network {
             return;
         }
 
-        const velocity = 300;
-
-        // Reset velocity
-        this.currentPlayer.setVelocity(0);
-
-        // Apply movement using velocity instead of position
-        if (this.cursorKeys.left.isDown) {
-            this.currentPlayer.setVelocityX(-velocity);
-            this.currentPlayer.anims.play(`${this.character}_left_run`, true);
-            this.lastPressedKey = "left";
-            this.room.send(0, {
-                playerX: this.currentPlayer.x,
-                playerY: this.currentPlayer.y,
-                anim: `${this.character}_left_run`,
-            });
-        } else if (this.cursorKeys.right.isDown) {
-            this.currentPlayer.setVelocityX(velocity);
-            this.currentPlayer.anims.play(`${this.character}_right_run`, true);
-            this.lastPressedKey = "right";
-            this.room.send(0, {
-                playerX: this.currentPlayer.x,
-                playerY: this.currentPlayer.y,
-                anim: `${this.character}_right_run`,
-            });
-        } else if (this.cursorKeys.up.isDown) {
-            this.currentPlayer.setVelocityY(-velocity);
-            this.currentPlayer.anims.play(`${this.character}_up_run`, true);
-            this.lastPressedKey = "up";
-            this.room.send(0, {
-                playerX: this.currentPlayer.x,
-                playerY: this.currentPlayer.y,
-                anim: `${this.character}_up_run`,
-            });
-        } else if (this.cursorKeys.down.isDown) {
-            this.currentPlayer.setVelocityY(velocity);
-            this.currentPlayer.anims.play(`${this.character}_down_run`, true);
-            this.lastPressedKey = "down";
-            this.room.send(0, {
-                playerX: this.currentPlayer.x,
-                playerY: this.currentPlayer.y,
-                anim: `${this.character}_down_run`,
-            });
-        } else {
-            this.currentPlayer.anims.play(
-                `${this.character}_${this.lastPressedKey}_idle`,
-                true
-            );
-            this.room.send(0, {
-                playerX: this.currentPlayer.x,
-                playerY: this.currentPlayer.y,
-                anim: `${this.character}_${this.lastPressedKey}_idle`,
-            });
-        }
+        this.handlePlayerMovements();
 
         const { x, y } = this.currentPlayer;
 

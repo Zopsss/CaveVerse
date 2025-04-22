@@ -178,7 +178,7 @@ export class MyRoom extends Room<MyRoomState> {
 
         this.setState(new MyRoomState());
 
-        this.onMessage(0, (client, input) => {
+        this.onMessage("PLAYER_MOVED", (client, input) => {
             const player = this.state.players.get(client.sessionId);
             player.x = input.playerX;
             player.y = input.playerY;
@@ -206,13 +206,11 @@ export class MyRoom extends Room<MyRoomState> {
                 chat.push(newMessage);
 
                 members.forEach((_, userId) => {
-                    this.clients
-                        .getById(userId)
-                        .send("NEW_OFFICE_MESSAGE", {
-                            username,
-                            message,
-                            type,
-                        });
+                    this.clients.getById(userId).send("NEW_OFFICE_MESSAGE", {
+                        username,
+                        message,
+                        type,
+                    });
                 });
             }
         );
