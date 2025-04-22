@@ -76,7 +76,7 @@ const Chat = () => {
 
     return (
         <>
-            <div className="absolute right-0 w-fit lg:w-96 h-screen rounded-sm border bg-indigo-950 border-indigo-500 text-white flex flex-col px-2">
+            <div className="absolute right-3 top-3 bottom-3 w-fit lg:w-96 h-[100vh-12px] rounded-sm border bg-indigo-950 border-indigo-500 text-white flex flex-col px-2">
                 <div className="flex items-center justify-around gap-1">
                     {showOfficeChat ? (
                         <div className="flex items-center justify-between gap-1 w-full mt-3">

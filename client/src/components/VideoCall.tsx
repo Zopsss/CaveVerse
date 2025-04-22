@@ -14,7 +14,7 @@ const VideoCall = () => {
     if (isDisconnectedFromVideoCalls) return;
 
     return (
-        <div className="absolute left-[35px] top-[10px] h-screen flex flex-col flex-wrap gap-2">
+        <div className="absolute left-[35px] top-[10px] max-h-screen flex flex-col flex-wrap gap-2">
             {myWebcamStream && (
                 <VideoPlayer
                     stream={myWebcamStream}
