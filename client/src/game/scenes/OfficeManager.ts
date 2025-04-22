@@ -13,39 +13,32 @@ type OfficeZone = {
 };
 
 export class OfficeManager {
-    private offices: OfficeZone[] = [];
     private currentOffice: OfficeName | null = null;
     private lastRect: Phaser.Geom.Rectangle | null = null;
+    static OFFICES: ReadonlyArray<OfficeZone> = [
+        {
+            name: "mainOffice",
+            rect: new Phaser.Geom.Rectangle(799.85, 608.02, 799.85, 512.02),
+        },
+        {
+            name: "eastOffice",
+            rect: new Phaser.Geom.Rectangle(63.96, 351.94, 384.12, 768.09),
+        },
+        {
+            name: "westOffice",
+            rect: new Phaser.Geom.Rectangle(1920.0, 608.25, 448.13, 544.0),
+        },
+        {
+            name: "northOffice1",
+            rect: new Phaser.Geom.Rectangle(927.85, 156.61, 512.09, 259.42),
+        },
+        {
+            name: "northOffice2",
+            rect: new Phaser.Geom.Rectangle(1471.97, 156.61, 512.09, 259.42),
+        },
+    ];
 
-    constructor() {
-        this.offices = [
-            {
-                name: "mainOffice",
-                rect: new Phaser.Geom.Rectangle(799.85, 608.02, 799.85, 512.02),
-            },
-            {
-                name: "eastOffice",
-                rect: new Phaser.Geom.Rectangle(63.96, 351.94, 384.12, 768.09),
-            },
-            {
-                name: "westOffice",
-                rect: new Phaser.Geom.Rectangle(1920.0, 608.25, 448.13, 544.0),
-            },
-            {
-                name: "northOffice1",
-                rect: new Phaser.Geom.Rectangle(927.85, 156.61, 512.09, 259.42),
-            },
-            {
-                name: "northOffice2",
-                rect: new Phaser.Geom.Rectangle(
-                    1471.97,
-                    156.61,
-                    512.09,
-                    259.42
-                ),
-            },
-        ];
-    }
+    constructor() {}
 
     /**
      * Check & Update player's current office.
@@ -63,7 +56,7 @@ export class OfficeManager {
             return this.currentOffice;
         }
 
-        for (const office of this.offices) {
+        for (const office of OfficeManager.OFFICES) {
             if (Phaser.Geom.Rectangle.Contains(office.rect, x, y)) {
                 if (office.name !== this.currentOffice) {
                     // user joined new office
