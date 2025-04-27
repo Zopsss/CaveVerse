@@ -21,9 +21,13 @@ import {
 import JoinCustomRoom from "./JoinCustomRoom";
 
 const JoinOrCreateCustomRoom = ({
+    setCarouselApi,
+    getSelectedCharacter,
     setShowPublicRoom,
     setShowCreateOrJoinCustomRoom,
 }: {
+    setCarouselApi: () => void;
+    getSelectedCharacter: () => "nancy" | "ash" | "lucy" | "adam";
     setShowPublicRoom: React.Dispatch<React.SetStateAction<boolean>>;
     setShowCreateOrJoinCustomRoom: React.Dispatch<
         React.SetStateAction<boolean>
@@ -42,6 +46,8 @@ const JoinOrCreateCustomRoom = ({
                 roomName={roomName}
                 roomId={roomId}
                 roomHasPassowrd={roomHasPassowrd}
+                getSelectedCharacter={getSelectedCharacter}
+                setCarouselApi={setCarouselApi}
                 setShowCreateOrJoinCustomRoom={setShowCreateOrJoinCustomRoom}
                 setShowJoinRoom={setShowJoinRoom}
             />
@@ -51,6 +57,8 @@ const JoinOrCreateCustomRoom = ({
     if (showCreateRoom) {
         return (
             <CreateCustomRoom
+                getSelectedCharacter={getSelectedCharacter}
+                setCarouselApi={setCarouselApi}
                 setShowCreateOrJoinCustomRoom={setShowCreateOrJoinCustomRoom}
                 setShowCreateRoom={setShowCreateRoom}
             />

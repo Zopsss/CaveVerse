@@ -90,6 +90,9 @@ const webcamSlice = createSlice({
          */
         disconnectFromVideoCall: (state) => {
             if (state.myWebcamStream) {
+                const tracks = state.myWebcamStream.getTracks();
+                tracks.forEach((track) => track.stop());
+
                 state.myWebcamStream = null;
                 state.isWebcamOn = false;
                 state.isMicOn = false;
