@@ -2,7 +2,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Bootstrap } from "../../game/scenes/Bootstrap";
 import { Button } from "../ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LoaderIcon } from "lucide-react";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import {
@@ -14,6 +14,7 @@ import {
     CarouselPrevious,
 } from "../ui/carousel";
 import phaserGame from "../../game/main";
+import { useAppSelector } from "../../app/hooks";
 
 const JoinCustomRoom = ({
     roomName,
@@ -34,6 +35,7 @@ const JoinCustomRoom = ({
     const [api, setApi] = useState<CarouselApi>();
     const [username, setUsername] = useState<string>();
     const [password, setPassword] = useState<string>(null);
+    const isLoading = useAppSelector((state) => state.room.isLoading);
 
     const getSelectedCharacter = () => {
         switch (api.selectedScrollSnap()) {
@@ -152,8 +154,16 @@ const JoinCustomRoom = ({
                     <Button
                         className="w-full cursor-pointer mt-2"
                         type="submit"
+                        disabled={isLoading}
                     >
-                        Join Room
+                        {isLoading ? (
+                            <>
+                                Joining Room{" "}
+                                <LoaderIcon className="ml-2 h-4 w-4 animate-spin" />
+                            </>
+                        ) : (
+                            "Join Room"
+                        )}
                     </Button>
                 </form>
             </CardContent>

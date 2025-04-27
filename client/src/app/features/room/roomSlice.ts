@@ -7,6 +7,7 @@ const initialState = {
         roomId: string;
         hasPassword: boolean;
     }>(),
+    isLoading: true,
 };
 
 const roomSlice = createSlice({
@@ -31,10 +32,17 @@ const roomSlice = createSlice({
                 (room) => room.roomId !== action.payload
             );
         },
+        setIsLoading: (state, action: PayloadAction<boolean>) => {
+            state.isLoading = action.payload;
+        },
     },
 });
 
-export const { setRoomJoined, addAvailableRooms, removeFromAvailableRooms } =
-    roomSlice.actions;
+export const {
+    setRoomJoined,
+    addAvailableRooms,
+    removeFromAvailableRooms,
+    setIsLoading,
+} = roomSlice.actions;
 
 export default roomSlice.reducer;

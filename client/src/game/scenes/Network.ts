@@ -7,6 +7,7 @@ import screenSharing from "../service/ScreenSharing";
 import {
     addAvailableRooms,
     removeFromAvailableRooms,
+    setIsLoading,
 } from "../../app/features/room/roomSlice";
 import {
     addGlobalChat,
@@ -70,6 +71,7 @@ export default class Network {
      */
     joinLobbyRoom = async () => {
         this.lobby = await this.client.joinOrCreate("LOBBY_ROOM");
+        store.dispatch(setIsLoading(false));
 
         this.lobby.onMessage("rooms", (rooms) => {
             rooms.forEach((room) => {
@@ -118,6 +120,7 @@ export default class Network {
      * @param character selected avatar
      */
     joinOrCreatePublicRoom = async (username: string, character: string) => {
+        store.dispatch(setIsLoading(true));
         this.username = username;
         this.character = character;
         this.room = await this.client.joinOrCreate("PUBLIC_ROOM", {
@@ -125,6 +128,7 @@ export default class Network {
             character: this.character,
         });
         this.lobby.leave();
+        store.dispatch(setIsLoading(false));
     };
 
     /**
@@ -141,6 +145,7 @@ export default class Network {
         password: string | null,
         character: string
     ) => {
+        store.dispatch(setIsLoading(true));
         this.username = username;
         this.character = character;
         this.room = await this.client.create("PRIVATE_ROOM", {
@@ -149,6 +154,7 @@ export default class Network {
             username: this.username,
         });
         this.lobby.leave();
+        store.dispatch(setIsLoading(false));
     };
 
     /**
@@ -165,6 +171,7 @@ export default class Network {
         password: string | null,
         character: string
     ) => {
+        store.dispatch(setIsLoading(true));
         this.username = username;
         this.character = character;
         console.log("room Id: ", roomId);
@@ -173,6 +180,7 @@ export default class Network {
             username: this.username,
         });
         this.lobby.leave();
+        store.dispatch(setIsLoading(false));
     };
 
     /**

@@ -19,7 +19,8 @@ import {
     CarouselPrevious,
 } from "../ui/carousel";
 import phaserGame from "../../game/main";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LoaderIcon } from "lucide-react";
+import { useAppSelector } from "../../app/hooks";
 
 const CreateCustomRoom = ({
     setShowCreateOrJoinCustomRoom,
@@ -35,6 +36,7 @@ const CreateCustomRoom = ({
     const [username, setUsername] = useState<string>();
     const [roomName, setRoomName] = useState<string>();
     const [password, setPassword] = useState<string>(null);
+    const isLoading = useAppSelector((state) => state.room.isLoading);
 
     const getSelectedCharacter = () => {
         switch (api.selectedScrollSnap()) {
@@ -171,8 +173,16 @@ const CreateCustomRoom = ({
                     <Button
                         className="w-full cursor-pointer mt-2"
                         type="submit"
+                        disabled={isLoading}
                     >
-                        Create Room
+                        {isLoading ? (
+                            <>
+                                Creating Room{" "}
+                                <LoaderIcon className="ml-2 h-4 w-4 animate-spin" />
+                            </>
+                        ) : (
+                            "Create Room"
+                        )}
                     </Button>
                 </form>
             </CardContent>
