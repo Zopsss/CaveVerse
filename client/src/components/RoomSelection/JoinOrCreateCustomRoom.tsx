@@ -21,9 +21,13 @@ import {
 import JoinCustomRoom from "./JoinCustomRoom";
 
 const JoinOrCreateCustomRoom = ({
+    setCarouselApi,
+    getSelectedCharacter,
     setShowPublicRoom,
     setShowCreateOrJoinCustomRoom,
 }: {
+    setCarouselApi: () => void;
+    getSelectedCharacter: () => "nancy" | "ash" | "lucy" | "adam";
     setShowPublicRoom: React.Dispatch<React.SetStateAction<boolean>>;
     setShowCreateOrJoinCustomRoom: React.Dispatch<
         React.SetStateAction<boolean>
@@ -34,14 +38,16 @@ const JoinOrCreateCustomRoom = ({
     const [showJoinRoom, setShowJoinRoom] = useState(false);
     const [roomId, setRoomId] = useState<string>();
     const [roomName, setRoomName] = useState<string>();
-    const [roomHasPassowrd, setRoomHasPassowrd] = useState<boolean>();
+    const [roomHasPassword, setRoomHasPassword] = useState<boolean>();
 
     if (showJoinRoom) {
         return (
             <JoinCustomRoom
                 roomName={roomName}
                 roomId={roomId}
-                roomHasPassowrd={roomHasPassowrd}
+                roomHasPassword={roomHasPassword}
+                getSelectedCharacter={getSelectedCharacter}
+                setCarouselApi={setCarouselApi}
                 setShowCreateOrJoinCustomRoom={setShowCreateOrJoinCustomRoom}
                 setShowJoinRoom={setShowJoinRoom}
             />
@@ -51,6 +57,8 @@ const JoinOrCreateCustomRoom = ({
     if (showCreateRoom) {
         return (
             <CreateCustomRoom
+                getSelectedCharacter={getSelectedCharacter}
+                setCarouselApi={setCarouselApi}
                 setShowCreateOrJoinCustomRoom={setShowCreateOrJoinCustomRoom}
                 setShowCreateRoom={setShowCreateRoom}
             />
@@ -114,7 +122,7 @@ const JoinOrCreateCustomRoom = ({
                                                         setRoomName(
                                                             room.roomName
                                                         );
-                                                        setRoomHasPassowrd(
+                                                        setRoomHasPassword(
                                                             room.hasPassword
                                                         );
                                                         setShowJoinRoom(true);

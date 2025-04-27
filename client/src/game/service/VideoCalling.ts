@@ -47,7 +47,6 @@ class VideoCalling {
             });
 
             peer.on("call", (call) => {
-                console.log("video call received from", call.peer);
                 call.answer();
                 call.on("stream", (userStream) => {
                     store.dispatch(
