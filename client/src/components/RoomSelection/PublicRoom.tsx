@@ -19,7 +19,8 @@ import {
     CarouselPrevious,
 } from "../ui/carousel";
 import phaserGame from "../../game/main";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LoaderIcon } from "lucide-react";
+import { useAppSelector } from "../../app/hooks";
 
 const PublicRoom = ({
     setShowPublicRoom,
@@ -33,6 +34,7 @@ const PublicRoom = ({
     const bootstrap = phaserGame.scene.keys.bootstrap as Bootstrap;
     const [api, setApi] = useState<CarouselApi>();
     const [username, setUsername] = useState<string>();
+    const isLoading = useAppSelector((state) => state.room.isLoading);
 
     const getSelectedCharacter = () => {
         switch (api.selectedScrollSnap()) {
@@ -144,8 +146,16 @@ const PublicRoom = ({
                     <Button
                         className="w-full cursor-pointer mt-2"
                         type="submit"
+                        disabled={isLoading}
                     >
-                        Join
+                        {isLoading ? (
+                            <>
+                                Joining Room{" "}
+                                <LoaderIcon className="ml-2 h-4 w-4 animate-spin" />
+                            </>
+                        ) : (
+                            "Join Room"
+                        )}
                     </Button>
                 </form>
             </CardContent>
