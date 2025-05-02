@@ -74,15 +74,11 @@ class ScreenSharing {
 
         const myScreenStream = store.getState().screen.myScreenStream;
         if (!myScreenStream) {
-            console.log("player is not sharing his screen");
             return;
         }
 
         try {
             const userId = sanitizeUserIdForScreenSharing(sessionId);
-            console.log(
-                `${"calling: " + userId + " with my id: " + this.peer.id}`
-            );
             this.peer.call(userId, myScreenStream);
         } catch (err) {
             console.error("Error while sharing screen: ", err);

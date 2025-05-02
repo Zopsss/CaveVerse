@@ -34,7 +34,7 @@ const PublicRoom = ({
     >;
 }) => {
     const bootstrap = phaserGame.scene.keys.bootstrap as Bootstrap;
-    const [username, setUsername] = useState<string>();
+    const [username, setUsername] = useState("");
     const isLoading = useAppSelector((state) => state.room.isLoading);
     const myWebcamStream = useAppSelector(
         (state) => state.webcam.myWebcamStream
@@ -43,7 +43,6 @@ const PublicRoom = ({
     const handlePublicRoomJoin = (e) => {
         e.preventDefault();
         const selectedCharacter = getSelectedCharacter();
-        console.log(selectedCharacter);
 
         bootstrap.network
             .joinOrCreatePublicRoom(username, selectedCharacter)

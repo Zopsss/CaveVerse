@@ -34,8 +34,8 @@ const JoinCustomRoom = ({
     setShowJoinRoom: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
     const bootstrap = phaserGame.scene.keys.bootstrap as Bootstrap;
-    const [username, setUsername] = useState<string>();
-    const [password, setPassword] = useState<string>(null);
+    const [username, setUsername] = useState("");
+    const [password, setPassword] = useState(null);
     const isLoading = useAppSelector((state) => state.room.isLoading);
     const myWebcamStream = useAppSelector(
         (state) => state.webcam.myWebcamStream

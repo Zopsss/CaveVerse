@@ -86,7 +86,7 @@ const FloatingActions = ({
                                 onClick={async () => {
                                     const gameInstance = phaserGame.scene.keys
                                         .GameScene as GameScene;
-                                    await gameInstance.network.startWebcam(
+                                    await gameInstance.startWebcam(
                                         shouldConnectToOtherPlayers
                                     );
                                     toast(
@@ -225,7 +225,7 @@ export const WebcamButtons = ({
                             onClick={() => {
                                 const gameInstance = phaserGame.scene.keys
                                     .GameScene as GameScene;
-                                gameInstance.network.playerStoppedWebcam();
+                                gameInstance.playerStoppedWebcam();
                                 setShouldConnectToOtherPlayers(true);
                                 toast(
                                     <div className="font-semibold">

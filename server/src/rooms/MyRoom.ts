@@ -7,10 +7,7 @@ type officeNames =
     | "westOffice"
     | "northOffice1"
     | "northOffice2";
-interface InputMessageType {
-    username: string;
-    message: string;
-}
+
 export class MyRoom extends Room<MyRoomState> {
     room: string;
     roomPassword: string;
@@ -362,7 +359,6 @@ export class MyRoom extends Room<MyRoomState> {
         this.state.players.delete(client.sessionId);
         this.state.globalChat.push(newMessage);
         this.broadcast("NEW_GLOBAL_CHAT_MESSAGE", {
-            sessionId: client.sessionId,
             username,
             message,
             type,
