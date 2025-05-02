@@ -18,3 +18,10 @@ export const sanitizeUserIdForScreenSharing = (userId: string) => {
     return `${userId.replace(/[^0-9a-z]/gi, "X")}-ss`;
 };
 
+export type officeNames =
+    | "mainOffice"
+    | "eastOffice"
+    | "westOffice"
+    | "northOffice1"
+    | "northOffice2"
+    | null;

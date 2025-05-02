@@ -1,10 +1,16 @@
 import Phaser from "phaser";
 import Network from "./Network";
+import { MyPlayer } from "./MyPlayer";
+import { Player } from "./Player";
+import { Event, phaserEvents } from "../EventBus";
 
 export class GameScene extends Phaser.Scene {
-    mapLayer: Phaser.Tilemaps.TilemapLayer;
-    map!: Phaser.Tilemaps.Tilemap;
-    network: Network;
+    private mapLayer: Phaser.Tilemaps.TilemapLayer;
+    private map!: Phaser.Tilemaps.Tilemap;
+    private network: Network;
+    private cursorKeys: Phaser.Types.Input.Keyboard.CursorKeys;
+    private myPlayer: MyPlayer;
+    private otherPlayers = new Map<string, Player>();
 
     constructor() {
         super({ key: "GameScene" });
@@ -33,8 +39,8 @@ export class GameScene extends Phaser.Scene {
                 item.setFlipY(true);
             }
         });
-        if (this.network.currentPlayer && collidable)
-            this.physics.add.collider([this.network.currentPlayer], group);
+        if (this.myPlayer && collidable)
+            this.physics.add.collider([this.myPlayer], group);
     }
 
     private loadObjectsFromTiled() {
@@ -81,6 +87,65 @@ export class GameScene extends Phaser.Scene {
         this.addGroupFromTiled("Whiteboard", "whiteboard", "whiteboard", true);
     }
 
+    private handleInitializingPlayer(
+        character: string,
+        username: string,
+        sessionId: string,
+        x: number,
+        y: number
+    ) {
+        console.log("current player's sessionId: ", sessionId);
+
+        this.myPlayer = new MyPlayer(
+            this,
+            x,
+            y,
+            character,
+            username,
+            sessionId,
+            this.network,
+            this.cursorKeys
+        );
+
+        this.physics.add.collider(this.myPlayer, this.mapLayer);
+        this.cameras.main.startFollow(this.myPlayer);
+        this.cameras.main.zoom = 1.7;
+        this.loadObjectsFromTiled();
+
+        this.myPlayer.initializePeers();
+    }
+
+    private handlePlayerJoined(player: any, sessionId: string) {
+        console.log("player added: ", sessionId);
+        const character = player.anim.split("_")[0]; // extracting character from the animation
+
+        const entity = new Player(
+            this,
+            player.x,
+            player.y,
+            character,
+            player.username
+        );
+
+        entity.setDepth(100);
+
+        // Store the entity reference
+        this.otherPlayers.set(sessionId, entity);
+
+        player.onChange(() => {
+            entity.setData("serverX", player.x);
+            entity.setData("serverY", player.y);
+            entity.setData("anim", player.anim);
+        });
+    }
+
+    private handlePlayerLeft(sessionId: string) {
+        this.otherPlayers.get(sessionId).destroy();
+        this.otherPlayers.delete(sessionId);
+
+        this.myPlayer.handlePlayerLeft(sessionId);
+    }
+
     enableKeys() {
         this.input.keyboard.enabled = true;
     }
@@ -88,6 +153,30 @@ export class GameScene extends Phaser.Scene {
     disableKeys() {
         this.input.keyboard.enabled = false;
         this.input.keyboard.disableGlobalCapture();
+    }
+
+    playerStoppedWebcam() {
+        this.myPlayer.playerStoppedWebcam();
+    }
+
+    playerStoppedScreenSharing() {
+        this.myPlayer.playerStoppedScreenSharing();
+    }
+
+    addNewOfficeChatMessage(message: string) {
+        this.myPlayer.addNewOfficeChatMessage(message);
+    }
+
+    addNewGlobalChatMessage(message: string) {
+        this.network.addNewGlobalChatMessage(message);
+    }
+
+    async startWebcam(shouldConnectToOtherPlayers = false) {
+        this.myPlayer.startWebcam(shouldConnectToOtherPlayers);
+    }
+
+    async startScreenSharing() {
+        this.myPlayer.startScreenSharing();
     }
 
     async create(data: { network: Network }) {
@@ -112,62 +201,37 @@ export class GameScene extends Phaser.Scene {
         this.mapLayer.setCollisionByProperty({ collides: true });
         this.mapLayer.setPosition(0, 0);
 
-        this.network.cursorKeys = this.input.keyboard.createCursorKeys();
+        this.cursorKeys = this.input.keyboard.createCursorKeys();
 
-        this.network.room.state.players.onAdd((player, sessionId) => {
-            console.log("player added: ", sessionId);
-            // hardcoding player's character here
-            // it doesn't affect as update method is called in loop
-            // so it'll add the real character even before game loads.
-            const entity = this.physics.add.sprite(
-                player.x,
-                player.y,
-                "nancy",
-                "nancy_down_idle"
-            );
-
-            entity.setDepth(100);
-
-            // Store the entity reference
-            this.network.otherPlayers[sessionId] = entity;
-
-            // Is current player
-            if (sessionId === this.network.room.sessionId) {
-                console.log(
-                    "current player's sessionId: ",
-                    this.network.room.sessionId
-                );
-                this.network.currentPlayer = entity;
-                this.network.currentPlayer.anims.play(
-                    `${this.network.character}_down_idle`
-                );
-                this.physics.add.collider(
-                    this.network.currentPlayer,
-                    this.mapLayer
-                );
-                this.cameras.main.startFollow(this.network.currentPlayer);
-                this.cameras.main.zoom = 1.7;
-                this.loadObjectsFromTiled();
-
-                this.network.initializePeers();
-            } else {
-                // Other players
-                player.onChange(() => {
-                    entity.setData("serverX", player.x);
-                    entity.setData("serverY", player.y);
-                    entity.setData("anim", player.anim);
-                });
-            }
-        });
+        // handling phaser events
+        phaserEvents.on(
+            Event.INITIALIZE_PLAYER,
+            this.handleInitializingPlayer,
+            this
+        );
+        phaserEvents.on(Event.PLAYER_JOINED, this.handlePlayerJoined, this);
+        phaserEvents.on(Event.PLAYER_LEFT, this.handlePlayerLeft, this);
 
         this.network.handleServerMessages();
     }
 
-    async update(time: number, delta: number) {
-        if (!this.network) {
+    async update(time: number) {
+        if (!this.network || !this.myPlayer) {
             return;
         }
 
-        this.network.update(time, delta);
+        this.myPlayer?.update();
+
+        // interpolate other players.
+        this.otherPlayers.forEach((player, sessionId) => {
+            if (player.data) {
+                const { serverX, serverY, anim } = player.data.values;
+                player.x = Phaser.Math.Linear(player.x, serverX, 0.2);
+                player.y = Phaser.Math.Linear(player.y, serverY, 0.2);
+                player.anims.play(anim, true);
+            }
+
+            this.myPlayer.handleProximityChat(time, sessionId, player);
+        });
     }
 }

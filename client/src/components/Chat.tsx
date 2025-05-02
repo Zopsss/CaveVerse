@@ -30,11 +30,9 @@ const Chat = () => {
 
         const gameInstance = phaserGame.scene.keys.GameScene as GameScene;
         if (activeChat === "Global") {
-            gameInstance.network.addNewGlobalChatMessage(
-                inputRef.current.value
-            );
+            gameInstance.addNewGlobalChatMessage(inputRef.current.value);
         } else {
-            gameInstance.network.addNewOfficeMessage(inputRef.current.value);
+            gameInstance.addNewOfficeChatMessage(inputRef.current.value);
         }
 
         inputRef.current.value = "";

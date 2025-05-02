@@ -72,15 +72,11 @@ class VideoCalling {
 
         const myWebcamStream = store.getState().webcam.myWebcamStream;
         if (!myWebcamStream) {
-            console.log("player is not sharing his webcam");
             return;
         }
 
         try {
             const userId = sanitizeUserIdForVideoCalling(sessionId);
-            console.log(
-                `${"calling: " + userId + " with my id: " + this.peer.id}`
-            );
             this.peer.call(userId, myWebcamStream);
         } catch (err) {
             console.error("Error while sharing screen: ", err);
@@ -89,6 +85,8 @@ class VideoCalling {
     }
 
     getUserMedia = async () => {
+        if (store.getState().webcam.myWebcamStream) return;
+
         const stream = await navigator.mediaDevices.getUserMedia({
             audio: true,
             video: true,

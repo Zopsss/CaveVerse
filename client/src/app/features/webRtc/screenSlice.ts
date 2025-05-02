@@ -74,7 +74,7 @@ const screenReducer = createSlice({
             });
             state.myScreenStream = null;
             const gameInstance = phaserGame.scene.keys.GameScene as GameScene;
-            gameInstance.network.playerStoppedScreenSharing();
+            gameInstance.playerStoppedScreenSharing();
         },
 
         /** For playerNameMap */

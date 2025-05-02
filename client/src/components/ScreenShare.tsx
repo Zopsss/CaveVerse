@@ -35,7 +35,7 @@ const ScreenShare = ({
 
     const startScreenSharing = async () => {
         const gameInstance = phaserGame.scene.keys.GameScene as GameScene;
-        await gameInstance.network.startScreenSharing();
+        await gameInstance.startScreenSharing();
         setScreenDialogOpen(false);
         toast(<div className="font-semibold">Started Screen Sharing</div>);
     };
