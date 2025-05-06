@@ -1,10 +1,4 @@
-import {
-    Schema,
-    type,
-    MapSchema,
-    ArraySchema,
-    SetSchema,
-} from "@colyseus/schema";
+import { Schema, type, MapSchema, ArraySchema } from "@colyseus/schema";
 
 type MessageType = "PLAYER_JOINED" | "PLAYER_LEFT" | "REGULAR_MESSAGE";
 
@@ -13,6 +7,9 @@ export class Player extends Schema {
     @type("number") y: number;
     @type("string") username: string;
     @type("string") anim: string;
+    @type("boolean") isMicOn: boolean = false;
+    @type("boolean") isWebcamOn: boolean = false;
+    @type("boolean") isDisconnected: boolean = false;
 }
 
 export class OfficeChat extends Schema {

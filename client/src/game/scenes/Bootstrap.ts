@@ -73,6 +73,12 @@ export class Bootstrap extends Phaser.Scene {
             frameHeight: 32,
         });
         this.load.image("ground_tiles", "assets/map/FloorAndGround.png");
+
+        this.load.svg("mic-on", "assets/items/mic-on.svg");
+        this.load.svg("mic-off", "assets/items/mic-off.svg");
+        this.load.svg("camera-on", "assets/items/camera-on.svg");
+        this.load.svg("camera-off", "assets/items/camera-off.svg");
+        this.load.svg("phone-off", "assets/items/phone-off.svg");
     }
 
     init() {

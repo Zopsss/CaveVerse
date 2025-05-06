@@ -3,8 +3,11 @@ import Network from "./Network";
 import { MyPlayer } from "./MyPlayer";
 import { Player } from "./Player";
 import { Event, phaserEvents } from "../EventBus";
+import store from "../../app/store";
 
 export class GameScene extends Phaser.Scene {
+    private static EPSILON = 0.5;
+
     private mapLayer: Phaser.Tilemaps.TilemapLayer;
     private map!: Phaser.Tilemaps.Tilemap;
     private network: Network;
@@ -96,6 +99,9 @@ export class GameScene extends Phaser.Scene {
     ) {
         console.log("current player's sessionId: ", sessionId);
 
+        const isMicOn = store.getState().webcam.isMicOn;
+        const isWebcamOn = store.getState().webcam.isWebcamOn;
+
         this.myPlayer = new MyPlayer(
             this,
             x,
@@ -103,6 +109,8 @@ export class GameScene extends Phaser.Scene {
             character,
             username,
             sessionId,
+            isMicOn,
+            isWebcamOn,
             this.network,
             this.cursorKeys
         );
@@ -116,7 +124,6 @@ export class GameScene extends Phaser.Scene {
     }
 
     private handlePlayerJoined(player: any, sessionId: string) {
-        console.log("player added: ", sessionId);
         const character = player.anim.split("_")[0]; // extracting character from the animation
 
         const entity = new Player(
@@ -124,7 +131,9 @@ export class GameScene extends Phaser.Scene {
             player.x,
             player.y,
             character,
-            player.username
+            player.username,
+            player.isMicOn,
+            player.isWebcamOn
         );
 
         entity.setDepth(100);
@@ -136,6 +145,9 @@ export class GameScene extends Phaser.Scene {
             entity.setData("serverX", player.x);
             entity.setData("serverY", player.y);
             entity.setData("anim", player.anim);
+            entity.setData("isDisconnected", player.isDisconnected);
+            entity.setData("isMicOn", player.isMicOn);
+            entity.setData("isWebcamOn", player.isWebcamOn);
         });
     }
 
@@ -169,6 +181,36 @@ export class GameScene extends Phaser.Scene {
 
     addNewGlobalChatMessage(message: string) {
         this.network.addNewGlobalChatMessage(message);
+    }
+
+    updateMicStatus(on: boolean) {
+        if (!this.myPlayer) return;
+
+        this.myPlayer.setMicIcon(on);
+        this.network.updatePlayer(
+            this.myPlayer.x,
+            this.myPlayer.y,
+            this.myPlayer.getCurrentAnimationKey(),
+            { isMicOn: on }
+        );
+    }
+
+    updateWebcamStatus(on: boolean) {
+        if (!this.myPlayer) return;
+
+        this.myPlayer.setWebcamIcon(on);
+        this.network.updatePlayer(
+            this.myPlayer.x,
+            this.myPlayer.y,
+            this.myPlayer.getCurrentAnimationKey(),
+            { isWebcamOn: on }
+        );
+    }
+
+    updateDisconnectStatus(disconnected: boolean) {
+        if (!this.myPlayer) return;
+
+        this.myPlayer.updateDisconnectStatus(disconnected);
     }
 
     async startWebcam(shouldConnectToOtherPlayers = false) {
@@ -225,10 +267,58 @@ export class GameScene extends Phaser.Scene {
         // interpolate other players.
         this.otherPlayers.forEach((player, sessionId) => {
             if (player.data) {
-                const { serverX, serverY, anim } = player.data.values;
-                player.x = Phaser.Math.Linear(player.x, serverX, 0.2);
-                player.y = Phaser.Math.Linear(player.y, serverY, 0.2);
-                player.anims.play(anim, true);
+                const {
+                    serverX,
+                    serverY,
+                    isDisconnected,
+                    isMicOn,
+                    isWebcamOn,
+                    anim,
+                } = player.data.values;
+
+                const dx = Math.abs(player.x - serverX);
+                const dy = Math.abs(player.y - serverY);
+
+                // if player has not changed his position then no need to do anything
+                // Phaser.Math.Linear returns float value and serverX & serverY are int values
+                // so player.x, player.y & serverX, serverY are not same but very close to each other
+                // so "EPSILON" is used to determine if the position should be updated or not.
+                if (dx > GameScene.EPSILON || dy > GameScene.EPSILON) {
+                    player.x = Phaser.Math.Linear(player.x, serverX, 0.2);
+                    player.y = Phaser.Math.Linear(player.y, serverY, 0.2);
+                    player.playAnimation(anim);
+                }
+
+                const {
+                    isDisconnected: wasDisconnected,
+                    isMicOn: wasMicOn,
+                    isWebcamOn: wasWebcamOn,
+                } = player.getCurrentStatus();
+
+                // if status is not updated then no need to do anything
+                if (
+                    isDisconnected !== wasDisconnected ||
+                    isMicOn !== wasMicOn ||
+                    isWebcamOn !== wasWebcamOn
+                ) {
+                    console.log("status updated....");
+                    if (isDisconnected) {
+                        // player disconnected
+                        // show disconnected button and remove mic/webcam button
+                        player.setDisconnectIcon(true);
+                        return;
+                    }
+
+                    if (wasDisconnected && !isDisconnected) {
+                        // player reconnected
+                        // remove disconnected button and show mic/webcam button
+                        player.setDisconnectIcon(false);
+                        return;
+                    }
+
+                    player.setMicIcon(isMicOn);
+                    player.setWebcamIcon(isWebcamOn);
+                }
             }
 
             this.myPlayer.handleProximityChat(time, sessionId, player);

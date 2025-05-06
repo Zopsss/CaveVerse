@@ -113,12 +113,6 @@ export class MyRoom extends Room<MyRoomState> {
                 type: messageType,
             });
         });
-
-        const allMembers: any = [];
-        members.forEach((value, key) => {
-            allMembers.push({ key, value });
-        });
-        console.log("chat members: ", allMembers);
     }
 
     private handleOfficeLeave(
@@ -175,11 +169,27 @@ export class MyRoom extends Room<MyRoomState> {
 
         this.setState(new MyRoomState());
 
-        this.onMessage("PLAYER_MOVED", (client, input) => {
+        this.onMessage("UPDATE_PLAYER", (client, input) => {
             const player = this.state.players.get(client.sessionId);
             player.x = input.playerX;
             player.y = input.playerY;
             player.anim = input.anim;
+
+            const status = input.status;
+
+            if (!status) return;
+
+            if (status.isMicOn !== undefined) {
+                player.isMicOn = status.isMicOn;
+            }
+
+            if (status.isWebcamOn !== undefined) {
+                player.isWebcamOn = status.isWebcamOn;
+            }
+
+            if (status.isDisconnected !== undefined) {
+                player.isDisconnected = status.isDisconnected;
+            }
         });
 
         this.onMessage("JOIN_OFFICE", (client, { username, office }) => {
@@ -309,7 +319,6 @@ export class MyRoom extends Room<MyRoomState> {
 
     onJoin(client: Client, options: any) {
         console.log(client.sessionId, "joined!");
-        console.log("options: ", options);
 
         const player = new Player();
 
@@ -317,6 +326,9 @@ export class MyRoom extends Room<MyRoomState> {
         player.y = 820;
         player.username = options.username;
         player.anim = `${options.character}_down_idle`;
+        player.isMicOn = options.isMicOn;
+        player.isWebcamOn = options.isWebcamOn;
+        player.isDisconnected = false;
 
         this.state.players.set(client.sessionId, player);
 
