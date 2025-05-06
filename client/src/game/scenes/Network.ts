@@ -89,11 +89,16 @@ export default class Network {
      */
     joinOrCreatePublicRoom = async (username: string, character: string) => {
         store.dispatch(setIsLoading(true));
+        const isMicOn = store.getState().webcam.isMicOn;
+        const isWebcamOn = store.getState().webcam.isWebcamOn;
+
         this.username = username;
         this.character = character;
         this.room = await this.client.joinOrCreate("PUBLIC_ROOM", {
             username: this.username,
             character: this.character,
+            isMicOn,
+            isWebcamOn,
         });
         this.lobby.leave();
         store.dispatch(setIsLoading(false));
@@ -114,12 +119,18 @@ export default class Network {
         character: string
     ) => {
         store.dispatch(setIsLoading(true));
+
+        const isMicOn = store.getState().webcam.isMicOn;
+        const isWebcamOn = store.getState().webcam.isWebcamOn;
+
         this.username = username;
         this.character = character;
         this.room = await this.client.create("PRIVATE_ROOM", {
             name: roomName,
             password,
             username: this.username,
+            isMicOn,
+            isWebcamOn,
         });
         this.lobby.leave();
         store.dispatch(setIsLoading(false));
@@ -140,11 +151,17 @@ export default class Network {
         character: string
     ) => {
         store.dispatch(setIsLoading(true));
+
+        const isMicOn = store.getState().webcam.isMicOn;
+        const isWebcamOn = store.getState().webcam.isWebcamOn;
+
         this.username = username;
         this.character = character;
         this.room = await this.client.joinById(roomId, {
             password,
             username: this.username,
+            isMicOn,
+            isWebcamOn,
         });
         this.lobby.leave();
         store.dispatch(setIsLoading(false));
@@ -182,11 +199,21 @@ export default class Network {
         return officeMap[officeName];
     };
 
-    updatePlayer(x: number, y: number, anim: string) {
-        this.room.send("PLAYER_MOVED", {
+    updatePlayer(
+        x: number,
+        y: number,
+        anim: string,
+        status?: {
+            isMicOn?: boolean;
+            isWebcamOn?: boolean;
+            isDisconnected?: boolean;
+        }
+    ) {
+        this.room.send("UPDATE_PLAYER", {
             playerX: x,
             playerY: y,
             anim,
+            status,
         });
     }
 

@@ -1,6 +1,8 @@
+import { GameScene } from "../../../game/scenes/GameScene";
 import { sanitizeUserIdForVideoCalling } from "../../../lib/utils";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { MediaConnection } from "peerjs";
+import phaserGame from "../../../game/main";
 
 interface InitialState {
     myWebcamStream: MediaStream;
@@ -28,22 +30,35 @@ const webcamSlice = createSlice({
             state.isWebcamOn = true;
             state.isMicOn = true;
             state.isDisconnectedFromVideoCalls = false;
+
+            const gameInstance = phaserGame.scene.keys.GameScene as GameScene;
+            gameInstance?.updateDisconnectStatus(false);
         },
         toggleWebcam: (state) => {
             state.myWebcamStream.getVideoTracks()[0].enabled =
                 !state.myWebcamStream.getVideoTracks()[0].enabled;
             state.isWebcamOn = state.myWebcamStream.getVideoTracks()[0].enabled;
+
+            const gameInstance = phaserGame.scene.keys.GameScene as GameScene;
+            gameInstance?.updateWebcamStatus(state.isWebcamOn);
         },
         toggleMic: (state) => {
             state.myWebcamStream.getAudioTracks()[0].enabled =
                 !state.myWebcamStream.getAudioTracks()[0].enabled;
             state.isMicOn = state.myWebcamStream.getAudioTracks()[0].enabled;
+
+            const gameInstance = phaserGame.scene.keys.GameScene as GameScene;
+            gameInstance?.updateMicStatus(state.isMicOn);
         },
         turnOffWebcamAndMic: (state) => {
             state.myWebcamStream.getVideoTracks()[0].enabled = false;
             state.myWebcamStream.getAudioTracks()[0].enabled = false;
             state.isWebcamOn = false;
             state.isMicOn = false;
+
+            const gameInstance = phaserGame.scene.keys.GameScene as GameScene;
+            gameInstance?.updateMicStatus(false);
+            gameInstance?.updateWebcamStatus(false);
         },
 
         /* For GameScene.tsx */

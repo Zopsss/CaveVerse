@@ -27,6 +27,7 @@ export class MyPlayer extends Player {
     private lastX: number;
     private lastY: number;
     private mySessionId: string;
+    private character: string;
 
     private currentOffice: officeNames;
     private network: Network;
@@ -45,11 +46,14 @@ export class MyPlayer extends Player {
         character: string,
         username: string,
         mySessionId: string,
+        isMicOn: boolean,
+        isWebcamOn: boolean,
         network: Network,
         cursorKeys: Phaser.Types.Input.Keyboard.CursorKeys
     ) {
-        super(scene, x, y, character, username);
+        super(scene, x, y, character, username, isMicOn, isWebcamOn);
 
+        this.character = character;
         this.mySessionId = mySessionId;
         this.officeManager = new OfficeManager();
         this.network = network;
@@ -64,38 +68,37 @@ export class MyPlayer extends Player {
         // set velocity x & y and player's animation
         if (this.cursorKeys.left.isDown) {
             vx -= MyPlayer.SPEED;
-            this.anims.play(`${this.character}_left_run`, true);
+            this.playAnimation(`${this.character}_left_run`);
         } else if (this.cursorKeys.right.isDown) {
             vx += MyPlayer.SPEED;
-            this.anims.play(`${this.character}_right_run`, true);
+            this.playAnimation(`${this.character}_right_run`);
         } else if (this.cursorKeys.up.isDown) {
             vy -= MyPlayer.SPEED;
-            this.anims.play(`${this.character}_up_run`, true);
+            this.playAnimation(`${this.character}_up_run`);
         } else if (this.cursorKeys.down.isDown) {
             vy += MyPlayer.SPEED;
-            this.anims.play(`${this.character}_down_run`, true);
+            this.playAnimation(`${this.character}_down_run`);
         } else {
-            const parts = this.anims.currentAnim.key.split("_");
+            const currentAnimKey = this.getCurrentAnimationKey();
+            const parts = currentAnimKey.split("_");
             parts[2] = "idle"; // getting the last "run" animation and changing it to idle
             const idleAnim = parts.join("_");
 
             // this prevents sending idle animation multiple times to the server
-            if (this.anims.currentAnim.key !== idleAnim) {
-                this.anims.play(idleAnim, true);
+            if (currentAnimKey !== idleAnim) {
+                this.playAnimation(idleAnim);
                 this.network.updatePlayer(this.x, this.y, idleAnim);
             }
         }
 
         // set the velocity of the player
-        this.setVelocity(vx, vy);
+        (this.body as Phaser.Physics.Arcade.Body).setVelocity(vx, vy);
 
         // if player is moving then send his live position to the server.
         if (vx !== 0 || vy !== 0) {
-            this.network.updatePlayer(
-                this.x,
-                this.y,
-                this.anims.currentAnim.key
-            );
+            const currentAnimKey = this.getCurrentAnimationKey();
+
+            this.network.updatePlayer(this.x, this.y, currentAnimKey);
         }
     }
 
@@ -180,9 +183,7 @@ export class MyPlayer extends Player {
         }
     }
 
-    private async shareWebcamWithOfficePlayers(
-        shouldConnectToOtherPlayers: boolean
-    ) {
+    private shareWebcamWithOfficePlayers(shouldConnectToOtherPlayers: boolean) {
         const { members } = this.network.getOfficeData(this.currentOffice);
 
         members.forEach((username, sessionId) => {
@@ -210,6 +211,7 @@ export class MyPlayer extends Player {
     async startWebcam(shouldConnectToOtherPlayers = false) {
         await videoCalling.getUserMedia();
 
+        this.updateDisconnectStatus(false);
         if (this.currentOffice) {
             this.shareWebcamWithOfficePlayers(shouldConnectToOtherPlayers);
         } else {
@@ -234,6 +236,27 @@ export class MyPlayer extends Player {
             // call other present players of the office and share screen stream with them.
             screenSharing.shareScreen(sessionId);
         });
+    }
+
+    /**
+     * Handles disconnect status of the player
+     * If player clicks on "Disconnect from video calls" button,
+     * it removes mic/webcam icons and shows disconenct icon
+     * If player reconnects, it removes disconnect icon and shows mic/webcam icons
+     * It also notifies server about these updates.
+     *
+     * @param disconnected if true, show disconnect button otherwise show mic/webcam button
+     */
+    updateDisconnectStatus(disconnected: boolean) {
+        this.setDisconnectIcon(disconnected);
+
+        const status = this.getCurrentStatus();
+        this.network.updatePlayer(
+            this.x,
+            this.y,
+            this.getCurrentAnimationKey(),
+            status
+        );
     }
 
     /**
@@ -350,6 +373,7 @@ export class MyPlayer extends Player {
         // TODO: Add a common folder between server & client where all types can be declared.
         // because currentOffice can be set to invalid string which server cannot handle.
         store.dispatch(disconnectFromVideoCall());
+        this.updateDisconnectStatus(true);
         if (this.currentOffice) {
             this.network.userStoppedOfficeWebcam(this.currentOffice);
         } else {
