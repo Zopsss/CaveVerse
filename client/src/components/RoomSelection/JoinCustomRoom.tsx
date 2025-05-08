@@ -2,7 +2,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Bootstrap } from "../../game/scenes/Bootstrap";
 import { Button } from "../ui/button";
-import { ArrowLeft, LoaderIcon } from "lucide-react";
+import { ArrowLeft, LoaderIcon, OctagonAlert } from "lucide-react";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import phaserGame from "../../game/main";
@@ -13,6 +13,8 @@ import videoCalling from "../../game/service/VideoCalling";
 import { WebcamButtons } from "../FloatingActions";
 import store from "../../app/store";
 import { disconnectFromVideoCall } from "../../app/features/webRtc/webcamSlice";
+import { setIsLoading } from "../../app/features/room/roomSlice";
+import { PasswordInput } from "./PasswordInput";
 
 const JoinCustomRoom = ({
     roomName,
@@ -35,7 +37,8 @@ const JoinCustomRoom = ({
 }) => {
     const bootstrap = phaserGame.scene.keys.bootstrap as Bootstrap;
     const [username, setUsername] = useState("");
-    const [password, setPassword] = useState(null);
+    const [password, setPassword] = useState("");
+    const [alert, setAlert] = useState<string | null>(null);
     const isLoading = useAppSelector((state) => state.room.isLoading);
     const myWebcamStream = useAppSelector(
         (state) => state.webcam.myWebcamStream
@@ -49,6 +52,10 @@ const JoinCustomRoom = ({
             .joinCustomRoom(username.trim(), roomId, password, character)
             .then(() => {
                 bootstrap.launchGame();
+            })
+            .catch((e) => {
+                setAlert("Incorrect password");
+                store.dispatch(setIsLoading(false));
             });
     };
 
@@ -98,14 +105,20 @@ const JoinCustomRoom = ({
                         {roomHasPassword && (
                             <>
                                 <Label htmlFor="password">Password</Label>
-                                <Input
+                                <PasswordInput
                                     id="password"
-                                    type="password"
                                     value={password}
-                                    onChange={(e) => {
-                                        setPassword(e.target.value);
-                                    }}
+                                    alert={alert}
+                                    setAlert={setAlert}
+                                    setPassword={setPassword}
                                 />
+
+                                {alert && (
+                                    <h1 className="flex items-center gap-2 text-xs font-semibold text-red-500 mt-1 mb-2">
+                                        <OctagonAlert size={17} />
+                                        {alert}
+                                    </h1>
+                                )}
                             </>
                         )}
                         <Button

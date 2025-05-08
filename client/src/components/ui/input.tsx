@@ -2,6 +2,13 @@ import * as React from "react";
 
 import { cn } from "../../lib/utils";
 
+export interface InputProps
+    extends React.InputHTMLAttributes<HTMLInputElement> {
+    alert: string | null;
+    setAlert: (x: string) => void;
+    setPassword: (x: string) => void;
+}
+
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
     ({ className, type, ...props }, ref) => {
         return (

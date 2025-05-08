@@ -11,7 +11,7 @@ import {
     CardTitle,
 } from "../ui/card";
 import phaserGame from "../../game/main";
-import { ArrowLeft, LoaderIcon } from "lucide-react";
+import { ArrowLeft, LoaderIcon, OctagonAlert } from "lucide-react";
 import { useAppSelector } from "../../app/hooks";
 import { VideoPlayer } from "../VideoPlayer";
 import { WebcamButtons } from "../FloatingActions";
@@ -19,6 +19,7 @@ import videoCalling from "../../game/service/VideoCalling";
 import store from "../../app/store";
 import { disconnectFromVideoCall } from "../../app/features/webRtc/webcamSlice";
 import CharacterCarousel from "./CharacterCarousel";
+import { PasswordInput } from "./PasswordInput";
 
 const CreateCustomRoom = ({
     setCarouselApi,
@@ -36,7 +37,8 @@ const CreateCustomRoom = ({
     const bootstrap = phaserGame.scene.keys.bootstrap as Bootstrap;
     const [username, setUsername] = useState("");
     const [roomName, setRoomName] = useState("");
-    const [password, setPassword] = useState(null);
+    const [password, setPassword] = useState("");
+    const [alert, setAlert] = useState<string | null>(null);
     const isLoading = useAppSelector((state) => state.room.isLoading);
     const myWebcamStream = useAppSelector(
         (state) => state.webcam.myWebcamStream
@@ -46,11 +48,13 @@ const CreateCustomRoom = ({
         e.preventDefault();
 
         const character = getSelectedCharacter();
+        const finalPassword = password !== "" ? password : null;
+
         bootstrap.network
             .createCustomRoom(
                 username.trim(),
                 roomName.trim(),
-                password,
+                finalPassword,
                 character
             )
             .then(() => {
@@ -117,15 +121,20 @@ const CreateCustomRoom = ({
                             }}
                         />
                         <Label htmlFor="password">Password</Label>
-                        <Input
+                        <PasswordInput
                             id="password"
-                            type="password"
-                            placeholder="Passoword ( Optional )"
                             value={password}
-                            onChange={(e) => {
-                                setPassword(e.target.value);
-                            }}
+                            alert={alert}
+                            setAlert={setAlert}
+                            setPassword={setPassword}
                         />
+
+                        {alert && (
+                            <h1 className="flex items-center gap-2 text-xs font-semibold text-red-500 mt-1 mb-2">
+                                <OctagonAlert size={17} />
+                                {alert}
+                            </h1>
+                        )}
                         <Button
                             className="w-full cursor-pointer mt-2"
                             type="submit"

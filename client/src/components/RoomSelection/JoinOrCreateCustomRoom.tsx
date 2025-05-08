@@ -36,9 +36,9 @@ const JoinOrCreateCustomRoom = ({
     const availableRooms = useAppSelector((state) => state.room.availableRooms);
     const [showCreateRoom, setShowCreateRoom] = useState(false);
     const [showJoinRoom, setShowJoinRoom] = useState(false);
-    const [roomId, setRoomId] = useState<string>();
-    const [roomName, setRoomName] = useState<string>();
-    const [roomHasPassword, setRoomHasPassword] = useState<boolean>();
+    const [roomId, setRoomId] = useState("");
+    const [roomName, setRoomName] = useState("");
+    const [roomHasPassword, setRoomHasPassword] = useState(false);
 
     if (showJoinRoom) {
         return (
