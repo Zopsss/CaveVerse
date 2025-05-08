@@ -129,6 +129,7 @@ export default class Network {
             name: roomName,
             password,
             username: this.username,
+            character,
             isMicOn,
             isWebcamOn,
         });
@@ -160,6 +161,7 @@ export default class Network {
         this.room = await this.client.joinById(roomId, {
             password,
             username: this.username,
+            character,
             isMicOn,
             isWebcamOn,
         });
