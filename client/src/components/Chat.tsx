@@ -8,11 +8,11 @@ import { Button } from "./ui/button";
 import { MessageCircle, X } from "lucide-react";
 
 const Chat = () => {
-    const focused = useAppSelector((state) => state.chat.focused);
     const [activeChat, setActiveChat] = useState<"Global" | "OfficeSpecific">(
         "Global"
     );
     const [showChat, setShowChat] = useState(true);
+    const focused = useAppSelector((state) => state.chat.focused);
     const officeChatMessages = useAppSelector(
         (state) => state.chat.officeChatMessages
     );
@@ -38,6 +38,7 @@ const Chat = () => {
         inputRef.current.value = "";
     };
 
+    const chatContainerRef = useRef<HTMLDivElement>();
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -53,6 +54,11 @@ const Chat = () => {
             setActiveChat("Global");
         }
     }, [showOfficeChat]);
+
+    useEffect(() => {
+        chatContainerRef.current.scrollTop =
+            chatContainerRef.current.scrollHeight;
+    }, [globalChatMessages, officeChatMessages, activeChat]);
 
     const buttonCss =
         "font-semibold text-lg text-center grow cursor-default rounded-xs bg-indigo-800/30 text-indigo-50 cursor-pointer hover:bg-white hover:text-indigo-500";
@@ -124,14 +130,10 @@ const Chat = () => {
                 </div>
 
                 <div className="flex-1 w-full flex flex-col items-start justify-end mx-1 my-2 rounded-sm overflow-y-auto">
-                    <div className="overflow-auto w-full">
-                        {/* {Array.from({ length: 50 }).map((_, i) => (
-                        <div key={i} className="flex gap-2 text-sm">
-                            <p className="font-semibold">Nency:</p>
-                            <p>Hello Madam jiii {i}</p>
-                        </div>
-                    ))} */}
-
+                    <div
+                        className="overflow-auto w-full"
+                        ref={chatContainerRef}
+                    >
                         {activeChat === "Global"
                             ? globalChatMessages.map((msg, i) => {
                                   return (
