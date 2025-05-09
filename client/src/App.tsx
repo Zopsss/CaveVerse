@@ -6,6 +6,7 @@ import { useState } from "react";
 import FloatingActions from "./components/FloatingActions";
 import { AnimatePresence } from "framer-motion";
 import VideoCall from "./components/VideoCall";
+import CornerActionButtons from "./game/CornerActionButtons";
 
 function App() {
     const roomJoined = useAppSelector((state) => state.room.roomJoined);
@@ -14,7 +15,11 @@ function App() {
 
     return (
         <>
-            {!roomJoined && <RoomSelection />}
+            {!roomJoined && (
+                <>
+                    <RoomSelection />
+                </>
+            )}
             {roomJoined && (
                 <>
                     <Chat />
@@ -37,6 +42,7 @@ function App() {
                     />
                 </>
             )}
+            <CornerActionButtons isInGame={roomJoined} />
         </>
     );
 }
