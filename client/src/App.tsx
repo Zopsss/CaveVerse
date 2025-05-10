@@ -12,6 +12,7 @@ function App() {
     const roomJoined = useAppSelector((state) => state.room.roomJoined);
     const showOfficeChat = useAppSelector((state) => state.chat.showOfficeChat);
     const [screenDialogOpen, setScreenDialogOpen] = useState(false);
+    const [showChat, setShowChat] = useState(true);
 
     return (
         <>
@@ -22,13 +23,15 @@ function App() {
             )}
             {roomJoined && (
                 <>
-                    <Chat />
+                    {showChat && <Chat setShowChat={setShowChat} />}
                     <VideoCall />
                     <AnimatePresence mode="wait">
                         <FloatingActions
                             key="floating-buttons"
                             isInsideOffice={showOfficeChat}
+                            showChat={showChat}
                             setScreenDialogOpen={setScreenDialogOpen}
+                            setShowChat={setShowChat}
                         />
                     </AnimatePresence>
                 </>

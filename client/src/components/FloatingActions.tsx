@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import {
     Camera,
     CameraOff,
+    MessageSquareText,
     Mic,
     MicOff,
     PhoneOff,
@@ -24,10 +25,14 @@ import { useState } from "react";
 
 const FloatingActions = ({
     isInsideOffice,
+    showChat,
     setScreenDialogOpen,
+    setShowChat,
 }: {
     isInsideOffice: boolean;
+    showChat: boolean;
     setScreenDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    setShowChat: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
     const [shouldConnectToOtherPlayers, setShouldConnectToOtherPlayers] =
         useState(false);
@@ -46,9 +51,31 @@ const FloatingActions = ({
                 ease: [0.25, 0.8, 0.25, 1],
                 delay: 0.3,
             }}
-            className="absolute bottom-7 left-[40%] p-4 flex gap-4 bg-[#121214]/50 backdrop-blur-xs shadow-black/30 shadow-lg rounded-lg"
+            className={`absolute bottom-7 ${
+                !showChat
+                    ? "left-[40%]"
+                    : myWebcamStream
+                    ? "left-[calc((52%-384px)+48px)]"
+                    : "left-[calc((55%-384px)+48px)]"
+            } p-4 flex gap-4 bg-[#121214]/50 backdrop-blur-xs shadow-black/30 shadow-lg rounded-lg`}
         >
             <TooltipProvider>
+                {/* Chat */}
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="outline"
+                            className="cursor-pointer"
+                            onClick={() => setShowChat((showChat) => !showChat)}
+                        >
+                            <MessageSquareText />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p className="text-black">Chat</p>
+                    </TooltipContent>
+                </Tooltip>
+
                 {/* Screen Sharing */}
                 {isInsideOffice && (
                     <Tooltip>

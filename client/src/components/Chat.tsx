@@ -5,13 +5,16 @@ import { useAppSelector } from "../app/hooks";
 import { GameScene } from "../game/scenes/GameScene";
 import phaserGame from "../game/main";
 import { Button } from "./ui/button";
-import { MessageCircle, X } from "lucide-react";
+import { X } from "lucide-react";
 
-const Chat = () => {
+const Chat = ({
+    setShowChat,
+}: {
+    setShowChat: React.Dispatch<React.SetStateAction<boolean>>;
+}) => {
     const [activeChat, setActiveChat] = useState<"Global" | "OfficeSpecific">(
         "Global"
     );
-    const [showChat, setShowChat] = useState(true);
     const focused = useAppSelector((state) => state.chat.focused);
     const officeChatMessages = useAppSelector(
         (state) => state.chat.officeChatMessages
@@ -63,20 +66,6 @@ const Chat = () => {
     const buttonCss =
         "font-semibold text-lg text-center grow cursor-default rounded-xs bg-indigo-800/30 text-indigo-50 cursor-pointer hover:bg-white hover:text-indigo-500";
     const activeChatCss = "bg-indigo-500 text-indigo-50";
-
-    if (!showChat) {
-        return (
-            <div className="absolute bottom-10 right-7">
-                <Button
-                    variant="ghost"
-                    className="w-14 p-7 bg-white rounded-full cursor-pointer shadow-black/30 shadow-lg"
-                    onClick={() => setShowChat(true)}
-                >
-                    <MessageCircle />
-                </Button>
-            </div>
-        );
-    }
 
     return (
         <>
