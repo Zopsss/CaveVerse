@@ -15,7 +15,7 @@ jobs:
       
     defaults:
       run:
-        working-directory: ${{ maxtrix.service }}
+        working-directory: ${{ matrix.service }}
       
     steps:
       - uses: actions/checkout@v3
