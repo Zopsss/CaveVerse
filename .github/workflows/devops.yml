@@ -1,0 +1,32 @@
+name: CaveVerse-GitHubActions
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: [ubuntu-latest]
+    strategy:
+      matrix:
+        service: [client, server]
+      
+    defaults:
+      run:
+        working-directory: ${{ maxtrix.service }}
+      
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+        
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Build
+        run: npm run build
